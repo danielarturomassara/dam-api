@@ -1,0 +1,67 @@
+{
+  "name": "Daniel Arturo Massara API",
+  "dockerComposeFile": "../docker/docker-compose-dev.yml",
+  "service": "api",
+  "runServices": [
+    "mongodb"
+  ],
+  "workspaceFolder": "/workspace/api",
+  "features": {
+    "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine:latest": {},
+    "ghcr.io/pineromarcos/devcontainer-features/vim-alpine:latest": {}
+  },
+  "mounts": [
+    {
+      "source": "${localEnv:HOME}/.ssh",
+      "target": "/root/.ssh",
+      "type": "bind"
+    },
+    {
+      "source": "${localWorkspaceFolder}/../",
+      "target": "/workspace",
+      "type": "bind"
+    },
+    {
+      "source": "${localWorkspaceFolderBasename}-node_modules",
+      "target": "/workspace/api/node_modules",
+      "type": "volume"
+    }
+  ],
+  "postCreateCommand": "git config core.hooksPath .hooks && npm install",
+  "updateRemoteUserUID": true,
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "EdwinHuiSH.better-comments-next",
+        "mikestead.dotenv",
+        "streetsidesoftware.code-spell-checker",
+        "dbaeumer.vscode-eslint",
+        "cardinal90.multi-cursor-case-preserve",
+        "eamodio.gitlens",
+        "pflannery.vscode-versionlens",
+        "bruno-api-client.bruno"
+      ],
+      "settings": {
+        "workbench.editorAssociations": {
+          "*.md": "vscode.markdown.preview.editor"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "typescript.preferences.quoteStyle": "single",
+        "files.trimTrailingWhitespace": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.preferences.importModuleSpecifier": "non-relative",
+        "javascript.preferences.importModuleSpecifier": "non-relative",
+        "[typescript]": {
+          "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+        },
+        "editor.formatOnSave": true,
+        "eslint.useFlatConfig": true,
+        "eslint.format.enable": true,
+        "eslint.trace.server": "verbose",
+        "typescript.suggest.autoImports": true
+      }
+    }
+  }
+}

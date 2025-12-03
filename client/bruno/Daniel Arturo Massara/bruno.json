@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Daniel Arturo Massara",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

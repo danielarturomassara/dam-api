@@ -1,0 +1,17 @@
+meta {
+  name: Subscribe to Webhook
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{host}}/communication/subscribe?hub.mode=subscribe&hub.challenge=test&hub.verify_token=61dae89d9aaa2053d363c6221a28e65c
+  body: none
+  auth: none
+}
+
+params:query {
+  hub.mode: subscribe
+  hub.challenge: test
+  hub.verify_token: 61dae89d9aaa2053d363c6221a28e65c
+}

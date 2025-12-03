@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "ignorePaths": [
+    "*.bru",
+    "*.svg",
+    ".git",
+    "build",
+    "dist",
+    "node_modules"
+  ],
+  "import": [
+    "@cspell/dict-es-es/cspell-ext.json"
+  ],
+  "language": "en, es",
+  "version": "0.2",
+  "words": [
+    "chatwoot",
+    "whatsapp"
+  ]
+}

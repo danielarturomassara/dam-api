@@ -1,0 +1,19 @@
+services:
+  api:
+    image: node:${NODE_VERSION}
+    environment:
+      - NODE_ENV=development
+    command: sleep infinity
+    ports:
+      - "${NODE_API_PUBLIC_DEBUG_PORT}:9229"
+      - "${NODE_API_PUBLIC_PORT}:3000"
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:${MONGO_VERSION}
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dev
+      MONGO_INITDB_ROOT_PASSWORD: dev
+    ports:
+      - "${MONGO_PUBLIC_PORT}:27017"

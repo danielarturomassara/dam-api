@@ -17,8 +17,8 @@
       "type": "bind"
     },
     {
-      "source": "${localWorkspaceFolder}/../",
-      "target": "/workspace",
+      "source": "${localWorkspaceFolder}",
+      "target": "/workspace/api",
       "type": "bind"
     },
     {

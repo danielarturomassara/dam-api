@@ -54,7 +54,7 @@
   },
   "license": "ISC",
   "main": "dist/index.js",
-  "name": "dam-api",
+  "name": "@danielarturomassara/api",
   "scripts": {
     "build": "tsc && tsconfig-replace-paths --src=./src",
     "dev": "tsx watch src/index.ts",

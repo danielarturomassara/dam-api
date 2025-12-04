@@ -1,5 +1,5 @@
 {
-  "name": "Daniel Arturo Massara API",
+  "name": "dam/api",
   "dockerComposeFile": "../docker/docker-compose-dev.yml",
   "service": "api",
   "runServices": [

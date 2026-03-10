@@ -1,7 +1,7 @@
-import { HTTP_SERVER, HttpServer } from '@core/domain/HttpServer.js';
-import { Logger, LOGGER } from '@core/domain/Logger.js';
-import { App } from '@src/App.js';
-import { dependencyContainer } from '@src/dependencyContainer.js';
+import {HTTP_SERVER, HttpServer} from '@core/domain/HttpServer.js';
+import {Logger, LOGGER} from '@core/domain/Logger.js';
+import {App} from '@src/App.js';
+import {dependencyContainer} from '@src/dependencyContainer.js';
 
 const logger = dependencyContainer.get<Logger>(LOGGER);
 

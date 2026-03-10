@@ -7,8 +7,7 @@
   ],
   "workspaceFolder": "/workspace/api",
   "features": {
-    "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine:latest": {},
-    "ghcr.io/pineromarcos/devcontainer-features/vim-alpine:latest": {}
+    "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine:latest": {}
   },
   "mounts": [
     {
@@ -46,13 +45,12 @@
           "*.md": "vscode.markdown.preview.editor"
         },
         "terminal.integrated.defaultProfile.linux": "zsh",
-        "typescript.preferences.quoteStyle": "single",
+        "js/ts.preferences.quoteStyle": "single",
         "files.trimTrailingWhitespace": true,
         "editor.codeActionsOnSave": {
           "source.fixAll.eslint": "explicit"
         },
-        "typescript.preferences.importModuleSpecifier": "non-relative",
-        "javascript.preferences.importModuleSpecifier": "non-relative",
+        "js/ts.preferences.importModuleSpecifier": "non-relative",
         "[typescript]": {
           "editor.defaultFormatter": "dbaeumer.vscode-eslint"
         },
@@ -60,7 +58,7 @@
         "eslint.useFlatConfig": true,
         "eslint.format.enable": true,
         "eslint.trace.server": "verbose",
-        "typescript.suggest.autoImports": true
+        "js/ts.suggest.autoImports": true
       }
     }
   }

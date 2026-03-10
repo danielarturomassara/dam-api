@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 process.env.LOG_FORMAT = 'cli';
 import 'reflect-metadata';
-import { DataSeeder } from '@core/infrastructure/mongodb/migration/DataSeeder.js';
-import { dependencyContainer } from '@src/dependencyContainer.js';
-import { Command } from 'commander';
+import {DataSeeder} from '@core/infrastructure/mongodb/migration/DataSeeder.js';
+import {dependencyContainer} from '@src/dependencyContainer.js';
+import {Command} from 'commander';
 
 const program = new Command();
 const dataSeeder = dependencyContainer.get<DataSeeder>(DataSeeder);

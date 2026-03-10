@@ -1,17 +1,17 @@
-import { Config } from '@core/Config.js';
-import { Conflict } from '@core/domain/error/Conflict.js';
-import { Forbidden } from '@core/domain/error/Forbidden.js';
-import { InvalidArgument } from '@core/domain/error/InvalidArgument.js';
-import { NotFound } from '@core/domain/error/NotFound.js';
-import { Unauthorized } from '@core/domain/error/Unauthorized.js';
-import { HttpRouter } from '@core/domain/HttpRouter.js';
-import { Logger, LOGGER } from '@core/domain/Logger.js';
-import { HTTP_CLIENT_ERROR_CODES, HTTP_SERVER_ERROR_CODES } from '@core/domain/type/HttpCodes.js';
-import { NextFunction, Request, Response, Router } from 'express';
-import { glob } from 'glob';
-import { inject, injectable } from 'inversify';
-import path, { extname } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import {Config} from '@core/Config.js';
+import {Conflict} from '@core/domain/error/Conflict.js';
+import {Forbidden} from '@core/domain/error/Forbidden.js';
+import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
+import {NotFound} from '@core/domain/error/NotFound.js';
+import {Unauthorized} from '@core/domain/error/Unauthorized.js';
+import {HttpRouter} from '@core/domain/HttpRouter.js';
+import {Logger, LOGGER} from '@core/domain/Logger.js';
+import {HTTP_CLIENT_ERROR_CODES, HTTP_SERVER_ERROR_CODES} from '@core/domain/type/HttpCodes.js';
+import {NextFunction, Request, Response, Router} from 'express';
+import {glob} from 'glob';
+import {inject, injectable} from 'inversify';
+import path, {extname} from 'path';
+import {fileURLToPath, pathToFileURL} from 'url';
 
 @injectable()
 export class HttpRouterExpress implements HttpRouter {
@@ -89,14 +89,14 @@ export class HttpRouterExpress implements HttpRouter {
       const absolutePath = path.resolve(file);
       const fileUrl = pathToFileURL(absolutePath).href;
 
-      this.logger.info(`Loading router from file: ${ fileUrl }`);
+      this.logger.info(`Loading router from file: ${fileUrl}`);
 
       const importedModule = await import(fileUrl);
 
       const RouterClass = importedModule.ModuleRouter;
 
       if (typeof RouterClass !== 'function') {
-        this.logger.error(new NotFound(`ModuleRouter class in ${ fileUrl }`));
+        this.logger.error(new NotFound(`ModuleRouter class in ${fileUrl}`));
 
         continue;
       }

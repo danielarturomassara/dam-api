@@ -1,19 +1,25 @@
-import { ValueObject } from '@core/domain/valueObject/ValueObject.js';
-import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
+import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
+import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
+import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
 
-export class Uuid extends ValueObject<string> {
-  public static create (): string {
-    return uuidv4();
+export class Uuid extends TrimmedString {
+  public static create (): Uuid {
+    return new Uuid(uuidv4());
   }
 
-  public constructor (value: string) {
+  public static fromPrimitives (primitives: string): Uuid {
+    return new Uuid(primitives);
+  }
+
+  private constructor (value: string) {
     super(value);
-    this.ensureIsValidUuid(value);
+
+    this.ensureIsValidUuid();
   }
 
-  private ensureIsValidUuid (uuid: string): void {
-    if (!uuidValidate(uuid)) {
-      throw new Error(`<${ this.constructor.name }> does not allow the value <${ uuid }>`);
+  private ensureIsValidUuid (): void {
+    if (!uuidValidate(this.value)) {
+      throw new InvalidArgument({value: this.value, valueObjectName: 'Uuid'});
     }
   }
 }

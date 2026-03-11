@@ -1,6 +1,8 @@
 import {RegisterRequest} from '@account/application/dto/RegisterRequest.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
+import {Email} from '@core/domain/valueObject/Email.js';
+import {Phone} from '@core/domain/valueObject/Phone.js';
 
 export class RegisterValidator {
   public static validate (data: RegisterRequest): void {
@@ -76,17 +78,13 @@ export class RegisterValidator {
   }
 
   private static validateFieldIsPresent (data: RegisterRequest, field: keyof RegisterRequest): void {
-    if (!data[field] || data[field].trim() === '') {
+    if (!data[field] || this.isEmptyString(data[field])) {
       throw new InvalidArgument({customMessage: `${field} is required for ${data.provider} provider`});
     }
   }
 
   private static validateEmail (email: string): void {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(email)) {
-      throw new InvalidArgument({value: email, valueObjectName: 'Email'});
-    }
+    Email.fromPrimitives(email);
   }
 
   private static validatePasswordFormat (password: string): void {
@@ -96,10 +94,10 @@ export class RegisterValidator {
   }
 
   private static validatePhoneFormat (phone: string): void {
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    Phone.fromPrimitives(phone);
+  }
 
-    if (!phoneRegex.test(phone)) {
-      throw new InvalidArgument({value: phone, valueObjectName: 'Phone'});
-    }
+  private static isEmptyString (field: unknown): boolean {
+    return typeof field === 'string' && field.trim() === '';
   }
 }

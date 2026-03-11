@@ -18,3 +18,17 @@ export const formatInitials = (names: Names, separator: string = ''): string => 
 
   return `${givenInitials}${familyInitials}`.trim();
 };
+
+export const formatEmail = (email: string): string => {
+  return email.toLowerCase();
+};
+
+export const formatE164 = (phone: string): string => {
+  let normalized = phone.replace(/\D/g, '');
+
+  if (normalized.startsWith('00')) {
+    return `+${normalized.slice(2)}`;
+  }
+
+  return `+${normalized}`;
+};

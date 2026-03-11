@@ -29,7 +29,7 @@ export class AccountRepositoryMongo extends RepositoryMongo implements AccountRe
   public async findByEmail (email: Email): Promise<Nullable<Account>> {
     const collection = await this.getCollection<AccountMongoDocument>('accounts');
 
-    const document = await collection.findOne({email: email});
+    const document = await collection.findOne({primaryEmail: email.toPrimitives()});
 
     if (!document) {
       return null;
@@ -43,7 +43,7 @@ export class AccountRepositoryMongo extends RepositoryMongo implements AccountRe
   public async findByPhone (phone: Phone): Promise<Nullable<Account>> {
     const collection = await this.getCollection<AccountMongoDocument>('accounts');
 
-    const document = await collection.findOne({phone: phone});
+    const document = await collection.findOne({primaryPhone: phone.toPrimitives()});
 
     if (!document) {
       return null;
@@ -72,12 +72,12 @@ export class AccountRepositoryMongo extends RepositoryMongo implements AccountRe
   public async update (account: Account): Promise<void> {
     const collection = await this.getCollection<AccountMongoDocument>('accounts');
 
-    const mongoId = this.getObjectId(account.id);
+    const {_id, ...rest} = await this.toMongo(account);
 
     await collection.updateOne({
-      _id: mongoId
+      _id: _id
     }, {
-      $set: await this.toMongo(account)
+      $set: rest
     });
   }
 }

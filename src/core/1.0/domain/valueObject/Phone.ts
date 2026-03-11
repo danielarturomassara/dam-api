@@ -2,17 +2,14 @@ import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
 
 export class Phone extends TrimmedString {
-  private static readonly E164RegExp = /^\+\d{10,15}$/;
-  private static readonly nonDigitsRegExp = /[\D]/g;
+  private static readonly E164RegExp = /^\+\d{7,15}$/;
 
   public static fromPrimitives (primitives: string): Phone {
     return new Phone(primitives);
   }
 
   private constructor (value: string) {
-    const cleanNumber = `+${value.replace(Phone.nonDigitsRegExp, '')}`;
-
-    super(cleanNumber);
+    super(value);
 
     this.ensureIsValidPhone();
   }

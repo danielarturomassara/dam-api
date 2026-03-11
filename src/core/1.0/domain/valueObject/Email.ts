@@ -9,7 +9,7 @@ export class Email extends TrimmedString {
   }
 
   private constructor (value: string) {
-    super(value.toLowerCase());
+    super(value);
 
     this.ensureIsValidEmail();
   }

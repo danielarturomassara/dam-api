@@ -1,6 +1,7 @@
 import {RegisterRequest} from '@account/application/dto/RegisterRequest.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
+import {Phone} from '@core/domain/valueObject/Phone.js';
 
 export class RegisterValidator {
   public static validate (data: RegisterRequest): void {
@@ -96,10 +97,6 @@ export class RegisterValidator {
   }
 
   private static validatePhoneFormat (phone: string): void {
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-
-    if (!phoneRegex.test(phone)) {
-      throw new InvalidArgument({value: phone, valueObjectName: 'Phone'});
-    }
+    Phone.fromPrimitives(phone);
   }
 }

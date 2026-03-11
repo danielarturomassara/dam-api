@@ -1,24 +1,22 @@
-import { InvalidArgument } from '@core/domain/error/InvalidArgument.js';
-import { ValueObject } from '@core/domain/valueObject/ValueObject.js';
+import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
+import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
 
-export class Phone extends ValueObject<string> {
-  public constructor (value: string) {
-    let cleanNumber = value.replace(/[^+\d]/g, '');
+export class Phone extends TrimmedString {
+  private static readonly E164RegExp = /^\+\d{7,15}$/;
 
-    if (!cleanNumber.startsWith('+')) {
-      cleanNumber = `+${ cleanNumber }`;
-    }
+  public static fromPrimitives (primitives: string): Phone {
+    return new Phone(primitives);
+  }
 
-    super(cleanNumber);
+  private constructor (value: string) {
+    super(value);
 
     this.ensureIsValidPhone();
   }
 
   private ensureIsValidPhone (): void {
-    const validRegExp = new RegExp(/^[+]?\d+$/);
-
-    if (!validRegExp.test(this.value)) {
-      throw new InvalidArgument(`<${ this.constructor.name }> does not allow the value <${ this.value }>`);
+    if (!Phone.E164RegExp.test(this.value)) {
+      throw new InvalidArgument({value: this.value, valueObjectName: 'Phone'});
     }
   }
 }

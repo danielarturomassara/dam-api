@@ -31,9 +31,9 @@ export default [
         afterColon: true,
         beforeColon: false
       }],
-      'jsonc/object-curly-spacing': ['error', 'always'],
-      'jsonc/sort-array-values': ['error', { order: { type: 'asc' }, pathPattern: '.*' }],
-      'jsonc/sort-keys': ['error', { order: { type: 'asc' }, pathPattern: '.*' }],
+      'jsonc/object-curly-spacing': ['error', 'never'],
+      'jsonc/sort-array-values': ['error', {order: {type: 'asc'}, pathPattern: '.*'}],
+      'jsonc/sort-keys': ['error', {order: {type: 'asc'}, pathPattern: '.*'}],
       'jsonc/space-unary-ops': 'error',
       'no-multi-spaces': 'error',
       'no-multiple-empty-lines': [
@@ -78,6 +78,7 @@ export default [
       '@stylistic/eslint-plugin/no-trailing-spaces': 'error',
       '@stylistic/eslint-plugin/space-before-blocks': 'error',
       '@stylistic/eslint-plugin/space-before-function-paren': ['error', 'always'],
+      '@stylistic/eslint-plugin/template-curly-spacing': ['error', 'never'],
       '@stylistic/eslint-plugin/type-annotation-spacing': 'error',
       '@typescript-eslint/array-type': [
         'error',
@@ -164,7 +165,7 @@ export default [
       'no-var': ['error'],
       'object-curly-spacing': [
         'error',
-        'always'
+        'never'
       ],
       'padded-blocks': [
         'error',

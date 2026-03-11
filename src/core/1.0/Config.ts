@@ -1,9 +1,9 @@
-import { Recipient } from '@communication/domain/dto/Recipient.js';
-import { LOG_LEVELS } from '@core/domain/type/LogLevels.js';
-import { Url } from '@core/domain/valueObject/Url.js';
+import {Recipient} from '@communication/domain/dto/Recipient.js';
+import {LOG_LEVELS} from '@core/domain/type/LogLevels.js';
+import {Url} from '@core/domain/valueObject/Url.js';
 import dotenv from 'dotenv';
-import { injectable } from 'inversify';
-import { StringValue } from 'ms';
+import {injectable} from 'inversify';
+import {StringValue} from 'ms';
 
 dotenv.config();
 
@@ -58,15 +58,15 @@ export class Config {
   }
 
   public getApiUrl (): Url {
-    return new Url(process.env.API_URL as string);
+    return Url.fromPrimitives(process.env.API_URL as string);
   }
 
   public getAdminUrl (): Url {
-    return new Url(process.env.ADMIN_URL as string);
+    return Url.fromPrimitives(process.env.ADMIN_URL as string);
   }
 
   public getPublicUrl (): Url {
-    return new Url(process.env.PUBLIC_URL as string);
+    return Url.fromPrimitives(process.env.PUBLIC_URL as string);
   }
 
   public getEmailHost (): string {
@@ -148,6 +148,6 @@ export class Config {
   public getDebugRecipient (): Recipient {
     const debugRecipient = JSON.parse(process.env.DEBUG_RECIPIENT as string);
 
-    return new Recipient(debugRecipient);
+    return Recipient.fromPrimitives(debugRecipient);
   }
 }

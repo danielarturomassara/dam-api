@@ -1,7 +1,7 @@
-import { Config } from '@core/Config.js';
-import { Logger, LOGGER } from '@core/domain/Logger.js';
-import { Nullable } from '@core/domain/type/Nullable.js';
-import { inject, injectable } from 'inversify';
+import {Config} from '@core/Config.js';
+import {Logger, LOGGER} from '@core/domain/Logger.js';
+import {Nullable} from '@core/domain/type/Nullable.js';
+import {inject, injectable} from 'inversify';
 import * as mongodb from 'mongodb';
 
 @injectable()
@@ -41,7 +41,7 @@ export class MongoConnection {
 
   private async connect (): Promise<mongodb.MongoClient> {
     const databasePort = this.config.getDatabasePort();
-    const connectionString = `mongodb://${ this.getCredentialsString() }:${ databasePort }/?authSource=${
+    const connectionString = `mongodb://${this.getCredentialsString()}:${databasePort}/?authSource=${
       this.databaseName
     }`;
     const client = new mongodb.MongoClient(connectionString);
@@ -60,6 +60,6 @@ export class MongoConnection {
       return databaseHost;
     }
 
-    return `${ databaseUser }:${ databasePassword }@${ databaseHost }`;
+    return `${databaseUser}:${databasePassword}@${databaseHost}`;
   }
 }

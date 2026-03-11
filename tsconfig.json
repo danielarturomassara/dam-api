@@ -10,11 +10,17 @@
     "moduleResolution": "NodeNext",
     "outDir": "dist",
     "paths": {
+      "@account/*": [
+        "account/1.0/*"
+      ],
       "@communication/*": [
         "communication/1.0/*"
       ],
       "@core/*": [
         "core/1.0/*"
+      ],
+      "@cv/*": [
+        "cv/1.0/*"
       ],
       "@src/*": [
         "*"

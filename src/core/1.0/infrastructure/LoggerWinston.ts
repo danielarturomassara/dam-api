@@ -1,8 +1,8 @@
-import { Config } from '@core/Config.js';
-import { Logger } from '@core/domain/Logger.js';
-import { inject, injectable } from 'inversify';
-import { Format } from 'logform';
-import { createLogger, format, transports, Logger as WinstonLogger } from 'winston';
+import {Config} from '@core/Config.js';
+import {Logger} from '@core/domain/Logger.js';
+import {inject, injectable} from 'inversify';
+import {Format} from 'logform';
+import {createLogger, format, transports, Logger as WinstonLogger} from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
 @injectable()
@@ -44,7 +44,7 @@ export class LoggerWinston implements Logger {
         new DailyRotateFile({
           datePattern: 'YYYY-MM-DD-HH',
           dirname: './logs/',
-          filename: `%DATE%-${ this.nodeEnvironment }-info.log`,
+          filename: `%DATE%-${this.nodeEnvironment}-info.log`,
           level: 'info',
           maxFiles: '14d',
           maxSize: '20m',
@@ -53,7 +53,7 @@ export class LoggerWinston implements Logger {
         new DailyRotateFile({
           datePattern: 'YYYY-MM-DD-HH',
           dirname: './logs/',
-          filename: `%DATE%-${ this.nodeEnvironment }-error.log`,
+          filename: `%DATE%-${this.nodeEnvironment}-error.log`,
           level: 'error',
           maxFiles: '14d',
           maxSize: '20m',
@@ -88,7 +88,7 @@ export class LoggerWinston implements Logger {
 
   private getDevelopmentFormat (): Format {
     return format.combine(
-      format.timestamp({ format: this.timestampFormat }),
+      format.timestamp({format: this.timestampFormat}),
       format.prettyPrint({
         colorize: false,
         depth: 5
@@ -110,13 +110,13 @@ export class LoggerWinston implements Logger {
 
   private getProductionFormat (): Format {
     return format.combine(
-      format.timestamp({ format: this.timestampFormat }),
+      format.timestamp({format: this.timestampFormat}),
       format.colorize({
         colors: this.levelColors,
         level: true
       }),
       format.printf(log => {
-        return `${ log.timestamp } ${ log.app_name }:${ log.app_port } ${ log.level }: ${ log.message }`;
+        return `${log.timestamp} ${log.app_name}:${log.app_port} ${log.level}: ${log.message}`;
       })
     );
   }

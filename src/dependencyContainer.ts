@@ -1,7 +1,7 @@
-import { glob } from 'glob';
-import { Container } from 'inversify';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import {glob} from 'glob';
+import {Container} from 'inversify';
+import {dirname, join} from 'path';
+import {fileURLToPath} from 'url';
 
 import tsconfig from '../tsconfig.json' with { type: 'json' };
 
@@ -37,4 +37,4 @@ for (const alias in paths) {
   await dependencyContainer.load(module);
 }
 
-export { dependencyContainer };
+export {dependencyContainer};

@@ -1,1 +1,1 @@
-export type Nullable<T> = null | T | undefined;
+export type Nullable<T> = null | T;

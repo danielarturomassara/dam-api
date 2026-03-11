@@ -1,9 +1,9 @@
-import { Config } from '@core/Config.js';
-import { Logger, LOGGER } from '@core/domain/Logger.js';
-import { MongoConnection } from '@core/infrastructure/MongoConnection.js';
+import {Config} from '@core/Config.js';
+import {Logger, LOGGER} from '@core/domain/Logger.js';
+import {MongoConnection} from '@core/infrastructure/MongoConnection.js';
 import fs from 'fs';
-import { glob } from 'glob';
-import { inject, injectable } from 'inversify';
+import {glob} from 'glob';
+import {inject, injectable} from 'inversify';
 import * as mongodb from 'mongodb';
 
 @injectable()
@@ -25,19 +25,19 @@ export class DataSeeder {
       const filename = jsonFile.split('/').pop();
 
       if (filename) {
-        this.logger.info(`Found seed file: ${ filename }`);
+        this.logger.info(`Found seed file: ${filename}`);
 
         const collectionName = filename.replace('.json', '').replace('.csv', '');
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const fileContents: Array<any> = JSON.parse(fs.readFileSync(jsonFile, 'utf-8'));
 
-        this.logger.info(`${ filename } contains ${ fileContents.length } documents.`);
+        this.logger.info(`${filename} contains ${fileContents.length} documents.`);
 
         const documentsToInsert = fileContents.map(item => {
           if (item.id) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { id, ...rest } = item;
+            const {id, ...rest} = item;
 
             rest['_id'] = new mongodb.UUID(item.id);
 
@@ -49,13 +49,13 @@ export class DataSeeder {
 
         const collection = await this.getCollection(collectionName);
 
-        this.logger.info(`Dropping ${ collectionName } collection...`);
+        this.logger.info(`Dropping ${collectionName} collection...`);
         await collection.drop();
 
-        this.logger.info(`Inserting ${ documentsToInsert.length } documents into ${ collectionName } collection...`);
+        this.logger.info(`Inserting ${documentsToInsert.length} documents into ${collectionName} collection...`);
         await collection.insertMany(documentsToInsert);
 
-        this.logger.info(`Collection ${ collectionName } seeded successfully.`);
+        this.logger.info(`Collection ${collectionName} seeded successfully.`);
       }
     }
 

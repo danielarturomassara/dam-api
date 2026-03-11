@@ -1,8 +1,8 @@
-import { Config } from '@core/Config.js';
-import { Logger, LOGGER } from '@core/domain/Logger.js';
-import { Nullable } from '@core/domain/type/Nullable.js';
-import { inject, injectable } from 'inversify';
-import { Pool } from 'pg';
+import {Config} from '@core/Config.js';
+import {Logger, LOGGER} from '@core/domain/Logger.js';
+import {Nullable} from '@core/domain/type/Nullable.js';
+import {inject, injectable} from 'inversify';
+import {Pool} from 'pg';
 
 @injectable()
 export class DatabaseConnectionPostgreSQL {
@@ -53,7 +53,7 @@ export class DatabaseConnectionPostgreSQL {
       host: databaseHost,
       password: databasePassword,
       port: databasePort,
-      ssl: sslRequired ? { rejectUnauthorized: false } : false,
+      ssl: sslRequired ? {rejectUnauthorized: false} : false,
       user: databaseUser
     });
 

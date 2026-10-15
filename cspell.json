@@ -2,19 +2,30 @@
   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
   "ignorePaths": [
     "*.bru",
-    "*.svg",
-    ".git",
-    "build",
-    "dist",
-    "node_modules"
+    "*.svg"
   ],
   "import": [
+    "./gauntlet/config/cspell.json",
     "@cspell/dict-es-es/cspell-ext.json"
   ],
   "language": "en, es",
   "version": "0.2",
   "words": [
     "chatwoot",
+    "danielarturomassara",
+    "frameguard",
+    "initdb",
+    "keyof",
+    "libgcc",
+    "libstdc",
+    "logform",
+    "massara",
+    "nullable",
+    "openapi",
+    "openssh",
+    "postgresql",
+    "spanish",
+    "uuidv",
     "whatsapp"
   ]
 }

@@ -16,7 +16,7 @@ export class Email extends TrimmedString {
 
   private ensureIsValidEmail (): void {
     if (!Email.emailRegExp.test(this.value)) {
-      throw new InvalidArgument({value: this.value, valueObjectName: 'Email'});
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
     }
   }
 }

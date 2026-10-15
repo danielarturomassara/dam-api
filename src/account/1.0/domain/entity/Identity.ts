@@ -3,20 +3,20 @@ import {IdentityProviderGoogle, IdentityProviderGooglePrimitives} from '@account
 import {IdentityProviderMeta, IdentityProviderMetaPrimitives} from '@account/domain/entity/IdentityProviderMeta.js';
 import {IdentityProviderPassword, IdentityProviderPasswordPrimitives} from '@account/domain/entity/IdentityProviderPassword.js';
 import {IdentityProviderPhone, IdentityProviderPhonePrimitives} from '@account/domain/entity/IdentityProviderPhone.js';
-import {BaseEntityPrimitives} from '@core/domain/entity/BaseEntity.js';
+import {StrictUnion} from '@core/domain/type/StrictUnion.js';
 
-export type CreateIdentityPrimitives = Omit<IdentityPrimitives, keyof BaseEntityPrimitives>;
-
-export type Identity =
+export type Identity = StrictUnion<
   | IdentityProviderApple
   | IdentityProviderGoogle
   | IdentityProviderMeta
   | IdentityProviderPassword
-  | IdentityProviderPhone;
+  | IdentityProviderPhone
+>;
 
-export type IdentityPrimitives =
+export type IdentityPrimitives = StrictUnion<
   | IdentityProviderApplePrimitives
   | IdentityProviderGooglePrimitives
   | IdentityProviderMetaPrimitives
   | IdentityProviderPasswordPrimitives
-  | IdentityProviderPhonePrimitives;
+  | IdentityProviderPhonePrimitives
+>;

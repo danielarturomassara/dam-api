@@ -1,10 +1,10 @@
 import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
-import {v4 as uuidv4, validate as uuidValidate} from 'uuid';
+import {v4 as generateUuidV4, validate as isValidUuid} from 'uuid';
 
 export class Uuid extends TrimmedString {
   public static create (): Uuid {
-    return new Uuid(uuidv4());
+    return new Uuid(generateUuidV4());
   }
 
   public static fromPrimitives (primitives: string): Uuid {
@@ -18,8 +18,8 @@ export class Uuid extends TrimmedString {
   }
 
   private ensureIsValidUuid (): void {
-    if (!uuidValidate(this.value)) {
-      throw new InvalidArgument({value: this.value, valueObjectName: 'Uuid'});
+    if (!isValidUuid(this.value)) {
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
     }
   }
 }

@@ -6,12 +6,10 @@ export interface InvalidArgumentData {
 
 export class InvalidArgument extends Error {
   public constructor (data: InvalidArgumentData) {
-    if (data.customMessage) {
-      super(data.customMessage);
+    super();
 
-      return;
-    }
+    this.name = this.constructor.name;
 
-    super(`<${data.valueObjectName}> does not allow the value <${data.value}>`);
+    this.message = data.customMessage ?? `<${data.valueObjectName}> does not allow the value <${data.value}>`;
   }
 }

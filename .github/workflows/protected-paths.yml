@@ -1,0 +1,21 @@
+name: protected-paths
+
+concurrency:
+  cancel-in-progress: true
+  group: protected-paths-${{ github.ref }}
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  protected-paths:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'protected-approved') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fail on unapproved protected-path changes
+        run: node gauntlet/checkProtectedChanges.mjs "origin/${GITHUB_BASE_REF}"

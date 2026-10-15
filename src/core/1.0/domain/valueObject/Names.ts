@@ -22,9 +22,13 @@ export class Names {
   }
 
   private constructor (primitives: NamesPrimitives) {
-    this.given = TrimmedString.fromPrimitives(primitives.given);
     this.family = TrimmedString.fromPrimitives(primitives.family);
+    this.given = TrimmedString.fromPrimitives(primitives.given);
 
+    this.ensureNamesAreNotEmpty();
+  }
+
+  private ensureNamesAreNotEmpty (): void {
     if (this.given.isEmptyString() || this.family.isEmptyString()) {
       throw new InvalidArgument({customMessage: '<Names> does not allow empty strings'});
     }

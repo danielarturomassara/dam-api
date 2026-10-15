@@ -1,0 +1,5 @@
+#!/bin/sh
+# Third gate, outside the Claude Code process. `git push --no-verify` skips
+# it — seatbelt, not lock; CI remains authoritative.
+# Installed once per clone with: git config core.hooksPath gauntlet/hook/git
+node gauntlet/gauntlet.mjs

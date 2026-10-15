@@ -6,7 +6,7 @@ export class LanguageTag extends TrimmedString {
     return new LanguageTag(primitives);
   }
 
-  protected constructor (value: string) {
+  private constructor (value: string) {
     super(value);
 
     this.ensureIsValidLanguageTag();
@@ -15,8 +15,8 @@ export class LanguageTag extends TrimmedString {
   private ensureIsValidLanguageTag (): void {
     try {
       new Intl.Locale(this.value);
-    } catch (_error) {
-      throw new InvalidArgument({value: this.value, valueObjectName: 'LanguageTag'});
+    } catch {
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
     }
   }
 }

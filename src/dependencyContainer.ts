@@ -1,40 +1,21 @@
 import {glob} from 'glob';
-import {Container} from 'inversify';
-import {dirname, join} from 'path';
+import {Container, ContainerModule} from 'inversify';
+import {dirname} from 'path';
 import {fileURLToPath} from 'url';
 
-import tsconfig from '../tsconfig.json' with { type: 'json' };
+// Every module directory next to the composition root (`<module>/<version>/`) owns a
+// dependencyContainerModule; they are discovered on disk, so a new module needs no wiring here.
+// The lookup is relative to the running code: `src/` under tsx and Vitest, `dist/` after the build.
+const dependencyContainer = new Container();
+const moduleFileList = glob.sync('*/*/dependencyContainerModule.{js,ts}', {
+  absolute: true,
+  cwd: dirname(fileURLToPath(import.meta.url))
+}).sort();
 
-const paths = tsconfig.compilerOptions.paths;
+for (const moduleFile of moduleFileList) {
+  const importedModule: {default: ContainerModule} = await import(moduleFile);
 
-if (!paths) {
-  throw new Error('No paths found in tsconfig.json');
-}
-
-const dependencyContainer: Container = new Container();
-
-for (const alias in paths) {
-  const key = alias as keyof typeof paths;
-  const aliasPath = paths[key][0].replace('*', '');
-
-  if (aliasPath === '') {
-    continue;
-  }
-
-  const moduleDirectory = join(dirname(fileURLToPath(import.meta.url)), aliasPath);
-
-  const moduleFiles = glob.sync(join(moduleDirectory, 'dependencyContainerModule.{js,ts}'));
-
-  if (moduleFiles.length === 0) {
-    // eslint-disable-next-line no-console
-    console.error(`No dependencyContainerModule file found for alias: ${alias}`);
-
-    continue;
-  }
-
-  const module = (await import(moduleFiles[0])).default;
-
-  await dependencyContainer.load(module);
+  await dependencyContainer.load(importedModule.default);
 }
 
 export {dependencyContainer};

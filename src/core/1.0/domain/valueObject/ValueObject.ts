@@ -11,6 +11,7 @@ export abstract class ValueObject<T extends Primitives> {
 
   protected constructor (value: T) {
     this.value = value;
+
     this.ensureValueIsDefined();
   }
 
@@ -24,4 +25,3 @@ export abstract class ValueObject<T extends Primitives> {
     }
   }
 }
-

@@ -1,25 +1,25 @@
 import {BaseIdentity, BaseIdentityPrimitives} from '@account/domain/entity/BaseIdentity.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
-import {Email} from '@core/domain/valueObject/Email.js';
+import {TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
 import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
 
+export type CreateIdentityProviderPasswordPrimitives = Omit<IdentityProviderPasswordPrimitives, keyof TimestampedEntityPrimitives>;
+
 export interface IdentityProviderPasswordPrimitives extends BaseIdentityPrimitives {
-  email: string;
-  passwordHash: string;
-  phone?: never;
+  hash: string;
+  password: string;
   provider: IDENTITY_PROVIDERS.PASSWORD;
-  providerUserId?: never;
-};
+}
 
 export class IdentityProviderPassword extends BaseIdentity {
-  public readonly email: Email;
-  public readonly passwordHash: TrimmedString;
+  public readonly hash: TrimmedString;
+  public readonly password: TrimmedString;
 
-  public static create (primitives: IdentityProviderPasswordPrimitives): IdentityProviderPassword {
+  public static create (primitives: CreateIdentityProviderPasswordPrimitives): IdentityProviderPassword {
     return new IdentityProviderPassword({
       ...super.buildIdentity(primitives),
-      email: primitives.email,
-      passwordHash: primitives.passwordHash,
+      hash: primitives.hash,
+      password: primitives.password,
       provider: IDENTITY_PROVIDERS.PASSWORD
     });
   }
@@ -28,11 +28,11 @@ export class IdentityProviderPassword extends BaseIdentity {
     return new IdentityProviderPassword(primitives);
   }
 
-  public toPrimitives (): IdentityProviderPasswordPrimitives {
+  public override toPrimitives (): IdentityProviderPasswordPrimitives {
     return {
       ...super.toPrimitives(),
-      email: this.email.toPrimitives(),
-      passwordHash: this.passwordHash.toPrimitives(),
+      hash: this.hash.toPrimitives(),
+      password: this.password.toPrimitives(),
       provider: IDENTITY_PROVIDERS.PASSWORD
     };
   }
@@ -40,7 +40,7 @@ export class IdentityProviderPassword extends BaseIdentity {
   private constructor (primitives: IdentityProviderPasswordPrimitives) {
     super(primitives);
 
-    this.email = Email.fromPrimitives(primitives.email);
-    this.passwordHash = TrimmedString.fromPrimitives(primitives.passwordHash);
+    this.hash = TrimmedString.fromPrimitives(primitives.hash);
+    this.password = TrimmedString.fromPrimitives(primitives.password);
   }
 }

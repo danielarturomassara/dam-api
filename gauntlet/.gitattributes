@@ -1,0 +1,5 @@
+# The kit is shell and Node scripts that execute on Linux (the dev container, CI) whatever the
+# host is, and init.sh runs on the host itself. Pin LF so a Windows checkout with
+# core.autocrlf=true cannot turn them into CRLF, which bash and sh reject. Git applies this file
+# to everything under gauntlet/, so it travels with the kit and needs no project-side seed.
+* text=auto eol=lf

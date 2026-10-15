@@ -1,22 +1,22 @@
 import {BaseIdentity, BaseIdentityPrimitives} from '@account/domain/entity/BaseIdentity.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
-import {Phone} from '@core/domain/valueObject/Phone.js';
+import {VerificationCode} from '@account/domain/valueObject/VerificationCode.js';
+import {TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
+
+export type CreateIdentityProviderPhonePrimitives = Omit<IdentityProviderPhonePrimitives, keyof TimestampedEntityPrimitives>;
 
 export interface IdentityProviderPhonePrimitives extends BaseIdentityPrimitives {
-  email?: never;
-  passwordHash?: never;
-  phone: string;
+  code: string;
   provider: IDENTITY_PROVIDERS.PHONE;
-  providerUserId?: never;
-};
+}
 
 export class IdentityProviderPhone extends BaseIdentity {
-  public readonly phone: Phone;
+  public readonly code: VerificationCode;
 
-  public static create (primitives: IdentityProviderPhonePrimitives): IdentityProviderPhone {
+  public static create (primitives: CreateIdentityProviderPhonePrimitives): IdentityProviderPhone {
     return new IdentityProviderPhone({
       ...super.buildIdentity(primitives),
-      phone: primitives.phone,
+      code: primitives.code,
       provider: IDENTITY_PROVIDERS.PHONE
     });
   }
@@ -25,10 +25,10 @@ export class IdentityProviderPhone extends BaseIdentity {
     return new IdentityProviderPhone(primitives);
   }
 
-  public toPrimitives (): IdentityProviderPhonePrimitives {
+  public override toPrimitives (): IdentityProviderPhonePrimitives {
     return {
       ...super.toPrimitives(),
-      phone: this.phone.toPrimitives(),
+      code: this.code.toPrimitives(),
       provider: IDENTITY_PROVIDERS.PHONE
     };
   }
@@ -36,6 +36,6 @@ export class IdentityProviderPhone extends BaseIdentity {
   private constructor (primitives: IdentityProviderPhonePrimitives) {
     super(primitives);
 
-    this.phone = Phone.fromPrimitives(primitives.phone);
+    this.code = VerificationCode.fromPrimitives(primitives.code);
   }
 }

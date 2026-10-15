@@ -11,12 +11,12 @@ export class Time extends TrimmedString {
   private constructor (value: string) {
     super(value);
 
-    this.ensureTimeIsCorrect();
+    this.ensureIsValidTime();
   }
 
-  private ensureTimeIsCorrect (): void {
+  private ensureIsValidTime (): void {
     if (!Time.timeRegExp.test(this.value)) {
-      throw new InvalidArgument({value: this.value, valueObjectName: 'Time'});
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
     }
   }
 }

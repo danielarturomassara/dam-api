@@ -1,72 +1,64 @@
-import {RegisterRequest} from '@account/application/dto/RegisterRequest.js';
-import {IdentityFactory} from '@account/application/IdentityFactory.js';
+import {REGISTRATION_STRATEGY_REGISTRY, RegistrationStrategy, RegistrationStrategyRegistry} from '@account/application/useCase/registration/RegistrationStrategy.js';
 import {ACCOUNT_REPOSITORY, AccountRepository} from '@account/domain/AccountRepository.js';
-import {ENCRYPTER, Encrypter} from '@account/domain/Encrypter.js';
-import {Account} from '@account/domain/entity/Account.js';
-import {UseCase} from '@core/application/UseCase.js';
-import {Conflict} from '@core/domain/error/Conflict.js';
-import {Email} from '@core/domain/valueObject/Email.js';
-import {Phone} from '@core/domain/valueObject/Phone.js';
+import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
+import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {inject, injectable} from 'inversify';
 
+interface RegisterEnvelope {
+  providerName: string;
+  rawProviderData: unknown;
+}
+
 @injectable()
-export class Register extends UseCase<RegisterRequest, void> {
+export class Register {
   public constructor (
-    @inject(ENCRYPTER) private readonly encrypter: Encrypter,
-    @inject(ACCOUNT_REPOSITORY) private readonly accountRepository: AccountRepository
-  ) {
-    super();
-  }
+    @inject(ACCOUNT_REPOSITORY) private readonly accountRepository: AccountRepository,
+    @inject(REGISTRATION_STRATEGY_REGISTRY) private readonly registrationStrategyRegistry: RegistrationStrategyRegistry
+  ) {}
 
-  public async run (request: RegisterRequest): Promise<void> {
-    if (request.email) {
-      await this.checkIfEmailAlreadyExists(request.email);
-    }
+  public async run (input: unknown): Promise<void> {
+    const {providerName, rawProviderData} = this.parseEnvelope(input);
+    const registrationStrategy = this.getRegistrationStrategy(providerName);
 
-    if (request.phone) {
-      await this.checkIfPhoneAlreadyExists(request.phone);
-    }
-
-    const {password, ...rest} = request;
-
-    const hashedPassword = password ? await this.encrypter.encrypt(password) : undefined;
-
-    const identity = IdentityFactory.create({
-      ...rest,
-      disabledAt: null,
-      passwordHash: hashedPassword,
-      verifiedAt: null
-    });
-
-    const account = Account.create({
-      disabledAt: null,
-      identities: [identity.toPrimitives()],
-      primaryEmail: request.email ?? null,
-      primaryPhone: request.phone ?? null
-    });
+    const account = await registrationStrategy.register(rawProviderData);
 
     await this.accountRepository.create(account);
 
-    // TODO: Send verification email or WhatsApp message
+    // TODO(spec §4.3/§4.4): send the verification message through VerificationMessageSender once
+    // the communication context provides its adapter.
   }
 
-  private async checkIfEmailAlreadyExists (emailString: string): Promise<void> {
-    const email = Email.fromPrimitives(emailString);
-
-    const existingAccount = await this.accountRepository.findByEmail(email);
-
-    if (existingAccount) {
-      throw new Conflict('email');
+  private getRegistrationStrategy (providerName: string): RegistrationStrategy {
+    if (!this.isKnownProvider(providerName)) {
+      throw new InvalidArgument({customMessage: `Unknown provider: ${providerName}`});
     }
+
+    return this.registrationStrategyRegistry[providerName];
   }
 
-  private async checkIfPhoneAlreadyExists (phoneString: string): Promise<void> {
-    const phone = Phone.fromPrimitives(phoneString);
+  private isBlank (value: unknown): boolean {
+    return value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
+  }
 
-    const existingAccount = await this.accountRepository.findByPhone(phone);
+  private isKnownProvider (providerName: string): providerName is IDENTITY_PROVIDERS {
+    return Object.hasOwn(this.registrationStrategyRegistry, providerName);
+  }
 
-    if (existingAccount) {
-      throw new Conflict('phone');
+  private parseEnvelope (input: unknown): RegisterEnvelope {
+    if (typeof input !== 'object' || input === null) {
+      throw new InvalidArgument({customMessage: 'provider is required'});
     }
+
+    const providerValue: unknown = Reflect.get(input, 'provider');
+
+    if (this.isBlank(providerValue)) {
+      throw new InvalidArgument({customMessage: 'provider is required'});
+    }
+
+    if (typeof providerValue !== 'string') {
+      throw new InvalidArgument({customMessage: `Unknown provider: ${String(providerValue)}`});
+    }
+
+    return {providerName: providerValue, rawProviderData: Reflect.get(input, 'providerData')};
   }
 }

@@ -1,22 +1,18 @@
 import {Encrypter} from '@account/domain/Encrypter.js';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import {injectable} from 'inversify';
+
+const SALT_ROUNDS = 10;
 
 @injectable()
 export class EncrypterBcrypt implements Encrypter {
+  public constructor () {}
+
   public async compare (plainText: string, hashedText: string): Promise<boolean> {
-    return await bcrypt.compare(plainText, hashedText);
+    return bcrypt.compare(plainText, hashedText);
   }
 
   public async encrypt (plainText: string): Promise<string> {
-    const salt = await this.genSalt();
-
-    return await bcrypt.hash(plainText, salt);
-  }
-
-  private async genSalt (): Promise<string> {
-    const saltRounds = 10;
-
-    return await bcrypt.genSalt(saltRounds);
+    return bcrypt.hash(plainText, SALT_ROUNDS);
   }
 }

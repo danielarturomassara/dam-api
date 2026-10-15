@@ -1,21 +1,22 @@
 import {BaseIdentity, BaseIdentityPrimitives} from '@account/domain/entity/BaseIdentity.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
+import {TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
 import {Email} from '@core/domain/valueObject/Email.js';
 import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
 
+export type CreateIdentityProviderGooglePrimitives = Omit<IdentityProviderGooglePrimitives, keyof TimestampedEntityPrimitives>;
+
 export interface IdentityProviderGooglePrimitives extends BaseIdentityPrimitives {
   email: string;
-  passwordHash?: never;
-  phone?: never;
   provider: IDENTITY_PROVIDERS.GOOGLE;
   providerUserId: string;
-};
+}
 
 export class IdentityProviderGoogle extends BaseIdentity {
   public readonly email: Email;
   public readonly providerUserId: TrimmedString;
 
-  public static create (primitives: IdentityProviderGooglePrimitives): IdentityProviderGoogle {
+  public static create (primitives: CreateIdentityProviderGooglePrimitives): IdentityProviderGoogle {
     return new IdentityProviderGoogle({
       ...super.buildIdentity(primitives),
       email: primitives.email,
@@ -28,7 +29,7 @@ export class IdentityProviderGoogle extends BaseIdentity {
     return new IdentityProviderGoogle(primitives);
   }
 
-  public toPrimitives (): IdentityProviderGooglePrimitives {
+  public override toPrimitives (): IdentityProviderGooglePrimitives {
     return {
       ...super.toPrimitives(),
       email: this.email.toPrimitives(),

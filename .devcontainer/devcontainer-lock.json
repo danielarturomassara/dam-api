@@ -1,0 +1,9 @@
+{
+  "features": {
+    "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine:latest": {
+      "version": "1.0.4",
+      "resolved": "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine@sha256:662a9b45ca7272f87c85f7427a054712e9d2e9fd8cc656f26c99fbb685ef4684",
+      "integrity": "sha256:662a9b45ca7272f87c85f7427a054712e9d2e9fd8cc656f26c99fbb685ef4684"
+    }
+  }
+}

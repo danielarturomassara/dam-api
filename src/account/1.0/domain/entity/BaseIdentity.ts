@@ -1,22 +1,24 @@
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
-import {BaseEntity, BaseEntityPrimitives} from '@core/domain/entity/BaseEntity.js';
+import {TimestampedEntity, TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
 import {Conflict} from '@core/domain/error/Conflict.js';
 import {Nullable} from '@core/domain/type/Nullable.js';
 
-export interface BaseIdentityPrimitives extends BaseEntityPrimitives {
+export interface BaseIdentityPrimitives extends TimestampedEntityPrimitives {
   disabledAt: Nullable<Date>;
   provider: IDENTITY_PROVIDERS;
   verifiedAt: Nullable<Date>;
-};
+}
 
-export abstract class BaseIdentity extends BaseEntity {
-  public disabledAt: Nullable<Date>;
-  public provider: IDENTITY_PROVIDERS;
-  public verifiedAt: Nullable<Date>;
+export type CreateBaseIdentityPrimitives = Omit<BaseIdentityPrimitives, keyof TimestampedEntityPrimitives>;
 
-  protected static buildIdentity (primitives: BaseIdentityPrimitives): BaseIdentityPrimitives {
+export abstract class BaseIdentity extends TimestampedEntity {
+  public readonly provider: IDENTITY_PROVIDERS;
+  #disabledAt: Nullable<Date>;
+  #verifiedAt: Nullable<Date>;
+
+  protected static buildIdentity (primitives: CreateBaseIdentityPrimitives): BaseIdentityPrimitives {
     return {
-      ...BaseEntity.buildNew(),
+      ...super.buildNew(),
       disabledAt: primitives.disabledAt,
       provider: primitives.provider,
       verifiedAt: primitives.verifiedAt
@@ -24,43 +26,51 @@ export abstract class BaseIdentity extends BaseEntity {
   }
 
   public disable (): void {
-    if (this.disabledAt) {
-      throw new Conflict('Identity is already disabled.');
+    if (this.isDisabled()) {
+      throw new Conflict('Identity is already disabled');
     }
 
-    this.disabledAt = new Date();
+    this.#disabledAt = new Date();
   }
 
   public enable (): void {
-    this.disabledAt = null;
+    if (!this.isDisabled()) {
+      throw new Conflict('Identity is already enabled');
+    }
+
+    this.#disabledAt = null;
   }
 
   public isDisabled (): boolean {
-    return this.disabledAt !== null;
+    return this.#disabledAt !== null;
   }
 
-  public verify (): void {
-    if (this.verifiedAt) {
-      throw new Conflict('Identity is already verified.');
-    }
-
-    this.verifiedAt = new Date();
+  public isVerified (): boolean {
+    return this.#verifiedAt !== null;
   }
 
   public override toPrimitives (): BaseIdentityPrimitives {
     return {
       ...super.toPrimitives(),
-      disabledAt: this.disabledAt,
+      disabledAt: this.#disabledAt,
       provider: this.provider,
-      verifiedAt: this.verifiedAt
+      verifiedAt: this.#verifiedAt
     };
+  }
+
+  public verify (): void {
+    if (this.isVerified()) {
+      throw new Conflict('Identity is already verified');
+    }
+
+    this.#verifiedAt = new Date();
   }
 
   protected constructor (primitives: BaseIdentityPrimitives) {
     super(primitives);
 
-    this.disabledAt = primitives.disabledAt;
+    this.#disabledAt = primitives.disabledAt;
     this.provider = primitives.provider;
-    this.verifiedAt = primitives.verifiedAt;
+    this.#verifiedAt = primitives.verifiedAt;
   }
 }

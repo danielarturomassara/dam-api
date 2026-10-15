@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-process.env.LOG_FORMAT = 'cli';
 import 'reflect-metadata';
 import {DataSeeder} from '@core/infrastructure/mongodb/migration/DataSeeder.js';
 import {dependencyContainer} from '@src/dependencyContainer.js';
 import {Command} from 'commander';
+import {config as loadDotenv} from 'dotenv';
+
+loadDotenv();
 
 const program = new Command();
-const dataSeeder = dependencyContainer.get<DataSeeder>(DataSeeder);
 
 program
   .name('seeder')
@@ -15,8 +16,8 @@ program
 program
   .command('populate')
   .description('Populate database with seed data')
-  .action(async () => {
-    await dataSeeder.populate();
+  .action(async (): Promise<void> => {
+    await dependencyContainer.get<DataSeeder>(DataSeeder).populate();
   });
 
-program.parse(process.argv);
+await program.parseAsync(process.argv);

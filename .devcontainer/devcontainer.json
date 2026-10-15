@@ -1,18 +1,17 @@
 {
-  "name": "dam/api",
-  "dockerComposeFile": "../docker/docker-compose-dev.yml",
+  "name": "dam-api",
+  "dockerComposeFile": "../docker/compose.yml",
   "service": "api",
-  "runServices": [
-    "mongodb"
-  ],
   "workspaceFolder": "/workspace/api",
   "features": {
-    "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine:latest": {}
+    "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine:latest": {
+      "username": "node"
+    }
   },
   "mounts": [
     {
-      "source": "${localEnv:HOME}/.ssh",
-      "target": "/root/.ssh",
+      "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.ssh",
+      "target": "/home/node/.ssh",
       "type": "bind"
     },
     {
@@ -21,24 +20,41 @@
       "type": "bind"
     },
     {
-      "source": "${localWorkspaceFolderBasename}-node_modules",
+      "source": "dam-api-node_modules",
       "target": "/workspace/api/node_modules",
+      "type": "volume"
+    },
+    {
+      "source": "claude-code-config",
+      "target": "/home/node/.claude",
       "type": "volume"
     }
   ],
-  "postCreateCommand": "git config core.hooksPath .hooks && npm install",
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+  },
+  "postCreateCommand": {
+    "claude": "curl -fsSL https://claude.ai/install.sh | bash",
+    "hooks": "git config core.hooksPath gauntlet/hook/git",
+    "install": "npm install"
+  },
+  "containerUser": "node",
+  "remoteUser": "node",
   "updateRemoteUserUID": true,
   "customizations": {
     "vscode": {
       "extensions": [
+        "bruno-api-client.bruno",
+        "cardinal90.multi-cursor-case-preserve",
+        "davidanson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens",
         "EdwinHuiSH.better-comments-next",
         "mikestead.dotenv",
-        "streetsidesoftware.code-spell-checker",
-        "dbaeumer.vscode-eslint",
-        "cardinal90.multi-cursor-case-preserve",
-        "eamodio.gitlens",
         "pflannery.vscode-versionlens",
-        "bruno-api-client.bruno"
+        "streetsidesoftware.code-spell-checker",
+        "streetsidesoftware.code-spell-checker-spanish",
+        "yzhang.markdown-all-in-one"
       ],
       "settings": {
         "workbench.editorAssociations": {
@@ -48,9 +64,14 @@
         "js/ts.preferences.quoteStyle": "single",
         "files.trimTrailingWhitespace": true,
         "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": "explicit"
+          "source.fixAll.eslint": "explicit",
+          "source.fixAll.markdownlint": "explicit"
         },
         "js/ts.preferences.importModuleSpecifier": "non-relative",
+        "[markdown]": {
+          "editor.formatOnSave": true,
+          "editor.formatOnPaste": true
+        },
         "[typescript]": {
           "editor.defaultFormatter": "dbaeumer.vscode-eslint"
         },

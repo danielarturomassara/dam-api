@@ -1,44 +1,44 @@
-import {BaseEntity, BaseEntityPrimitives} from '@core/domain/entity/BaseEntity.js';
+import {BaseEntityPrimitives} from '@core/domain/entity/BaseEntity.js';
 import {Uuid} from '@core/domain/valueObject/Uuid.js';
 import {MongoConnection} from '@core/infrastructure/MongoConnection.js';
 import {inject, injectable} from 'inversify';
-import {Binary, Collection, Document} from 'mongodb';
+import {Binary, Collection, Document, UUID} from 'mongodb';
 
-export type WithMongoId<T extends { id?: string }> = Omit<T, 'id'> & { _id: Binary };
+export type WithMongoId<PRIMITIVES extends BaseEntityPrimitives> = Omit<PRIMITIVES, 'id'> & { _id: UUID };
+
+interface PrimitivesSource<PRIMITIVES extends BaseEntityPrimitives> {
+  toPrimitives (): PRIMITIVES;
+}
 
 @injectable()
 export class RepositoryMongo {
-  public constructor (@inject(MongoConnection) protected mongoConnection: MongoConnection) {}
+  public constructor (@inject(MongoConnection) protected readonly mongoConnection: MongoConnection) {}
 
-  protected async fromMongo<BEP extends BaseEntityPrimitives> (document: WithMongoId<BEP>): Promise<BEP> {
+  protected fromMongo<PRIMITIVES extends BaseEntityPrimitives> (document: WithMongoId<PRIMITIVES>): PRIMITIVES {
     const {_id, ...rest} = document;
 
-    return {
-      ...rest,
-      id: _id.toString()
-    } as unknown as BEP;
+    return {...rest, id: this.toUuidText(_id)} as unknown as PRIMITIVES;
   }
 
-  protected async getCollection<T extends Document> (collectionName: string): Promise<Collection<T>> {
+  protected async getCollection<DOCUMENT extends Document> (collectionName: string): Promise<Collection<DOCUMENT>> {
     const database = await this.mongoConnection.getDatabase();
-    const collection = database.collection<T>(collectionName);
 
-    return collection;
+    return database.collection<DOCUMENT>(collectionName);
   }
 
-  protected async toMongo<BE extends BaseEntity, BEP extends BaseEntityPrimitives = ReturnType<BE['toPrimitives']>> (entity: BE): Promise<WithMongoId<BEP>> {
+  protected getObjectId (id: Uuid): UUID {
+    return new UUID(id.toPrimitives());
+  }
+
+  protected toMongo<PRIMITIVES extends BaseEntityPrimitives> (entity: PrimitivesSource<PRIMITIVES>): WithMongoId<PRIMITIVES> {
     const {id, ...rest} = entity.toPrimitives();
-    const mongoId = this.getObjectId(Uuid.fromPrimitives(id));
 
-    return {
-      ...rest as Omit<BEP, 'id'>,
-      _id: mongoId
-    };
+    return {...rest, _id: this.getObjectId(Uuid.fromPrimitives(id))};
   }
 
-  protected getObjectId (id: Uuid): Binary {
-    const uuidBuffer = Buffer.from(id.toPrimitives());
+  private toUuidText (mongoId: Binary): string {
+    const uuid = mongoId instanceof UUID ? mongoId : mongoId.toUUID();
 
-    return new Binary(uuidBuffer, Binary.SUBTYPE_UUID);
+    return uuid.toHexString(true);
   }
 }

@@ -1,3 +1,4 @@
+import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {ValueObject} from '@core/domain/valueObject/ValueObject.js';
 
 export class TrimmedString extends ValueObject<string> {
@@ -10,6 +11,14 @@ export class TrimmedString extends ValueObject<string> {
   }
 
   protected constructor (value: string) {
-    super(value.trim());
+    super(typeof value === 'string' ? value.trim() : value);
+
+    this.ensureIsString();
+  }
+
+  private ensureIsString (): void {
+    if (typeof this.value !== 'string') {
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
+    }
   }
 }

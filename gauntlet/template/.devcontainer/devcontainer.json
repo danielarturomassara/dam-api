@@ -1,0 +1,86 @@
+{
+  "name": "{{project}}-{{service}}",
+  "dockerComposeFile": "../docker/compose.yml",
+  "service": "{{service}}",
+  "workspaceFolder": "/workspace/{{service}}",
+  "features": {
+    "ghcr.io/pineromarcos/devcontainer-features/zsh-alpine:latest": {
+      "username": "node"
+    }
+  },
+  "mounts": [
+    {
+      "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.ssh",
+      "target": "/home/node/.ssh",
+      "type": "bind"
+    },
+    {
+      "source": "${localWorkspaceFolder}",
+      "target": "/workspace/{{service}}",
+      "type": "bind"
+    },
+    {
+      "source": "{{project}}-{{service}}-node_modules",
+      "target": "/workspace/{{service}}/node_modules",
+      "type": "volume"
+    },
+    {
+      "source": "claude-code-config",
+      "target": "/home/node/.claude",
+      "type": "volume"
+    }
+  ],
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+  },
+  "postCreateCommand": {
+    "claude": "curl -fsSL https://claude.ai/install.sh | bash",
+    "hooks": "git config core.hooksPath gauntlet/hook/git",
+    "install": "npm install"
+  },
+  "containerUser": "node",
+  "remoteUser": "node",
+  "updateRemoteUserUID": true,
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bruno-api-client.bruno",
+        "cardinal90.multi-cursor-case-preserve",
+        "davidanson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens",
+        "EdwinHuiSH.better-comments-next",
+        "mikestead.dotenv",
+        "pflannery.vscode-versionlens",
+        "streetsidesoftware.code-spell-checker",
+        "streetsidesoftware.code-spell-checker-spanish",
+        "yzhang.markdown-all-in-one"
+      ],
+      "settings": {
+        "workbench.editorAssociations": {
+          "*.md": "vscode.markdown.preview.editor"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "js/ts.preferences.quoteStyle": "single",
+        "files.trimTrailingWhitespace": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit",
+          "source.fixAll.markdownlint": "explicit"
+        },
+        "js/ts.preferences.importModuleSpecifier": "non-relative",
+        "[markdown]": {
+          "editor.formatOnSave": true,
+          "editor.formatOnPaste": true
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+        },
+        "editor.formatOnSave": true,
+        "eslint.useFlatConfig": true,
+        "eslint.format.enable": true,
+        "eslint.trace.server": "verbose",
+        "js/ts.suggest.autoImports": true
+      }
+    }
+  }
+}

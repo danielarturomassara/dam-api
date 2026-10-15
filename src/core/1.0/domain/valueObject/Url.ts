@@ -13,10 +13,8 @@ export class Url extends TrimmedString {
   }
 
   private ensureIsValidUrl (): void {
-    try {
-      new URL(this.value);
-    } catch (_error) {
-      throw new InvalidArgument({value: this.value, valueObjectName: 'Url'});
+    if (!URL.canParse(this.value)) {
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
     }
   }
 }

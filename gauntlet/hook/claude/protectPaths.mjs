@@ -10,7 +10,7 @@
 // from inside a session.
 
 import {execFileSync} from 'node:child_process';
-import {isAbsolute, relative} from 'node:path';
+import {relative, resolve} from 'node:path';
 import {
   FULLY_PROTECTED_PATTERNS,
   IMMUTABLE_WHEN_EXISTING_PATTERNS,
@@ -60,12 +60,12 @@ if (!targetFilePath || isEscapeHatchActive()) {
   process.exit(0);
 }
 
-const relativeFilePath = (isAbsolute(targetFilePath)
-  ? relative(process.cwd(), targetFilePath)
-  : targetFilePath).replaceAll('\\', '/');
+// resolve() normalizes a relative file_path (`./CLAUDE.md`, `src/../CLAUDE.md`) before the
+// anchored patterns see it.
+const relativeFilePath = relative(process.cwd(), resolve(targetFilePath)).replaceAll('\\', '/');
 
 if (matchesAny(FULLY_PROTECTED_PATTERNS, relativeFilePath)) {
-  askOwner('Protected path (spec/gauntlet): ' + relativeFilePath + '. Approve only if you authorized this exact change.');
+  askOwner('Protected path (owner-only): ' + relativeFilePath + '. Approve only if you authorized this exact change.');
 }
 
 if (matchesAny(IMMUTABLE_WHEN_EXISTING_PATTERNS, relativeFilePath) && isTrackedInGit(relativeFilePath)) {

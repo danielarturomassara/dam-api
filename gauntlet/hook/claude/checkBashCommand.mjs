@@ -55,9 +55,12 @@ if (!bashCommand || isEscapeHatchActive() || !matchesAny(COMMAND_TEXT_PATTERNS, 
 if (COMMAND_WRITE_INDICATOR.test(bashCommand)) {
   console.error(
     'Blocked: this command appears to write content to a protected path (gauntlet kit, baseline, ' +
-    'root tool configs, spec/approved/, or existing tests). Use the Edit/Write tools instead — ' +
-    'their prompt shows the owner a diff — or propose the change. The owner can allow shell writes ' +
-    'by relaunching the session with GAUNTLET_ALLOW_PROTECTED_EDITS=1.'
+    'root tool configs, spec/approved/, the agent files .claude/, CLAUDE.md and context-map.md, ' +
+    'or existing tests). Use the Edit/Write tools instead — ' +
+    'their prompt shows the owner a diff — or propose the change. A command that only MENTIONS one ' +
+    'of these names while writing elsewhere trips the same guard: write that file with Edit/Write ' +
+    'too. The owner can allow shell writes by relaunching the session with ' +
+    'GAUNTLET_ALLOW_PROTECTED_EDITS=1.'
   );
   process.exit(2);
 }

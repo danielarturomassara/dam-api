@@ -1,13 +1,17 @@
-# Context Map — <project>
+# Context Map — dam/api
 
 > Authored and edited by Daniel only. Agents: read this before touching ANY cross-context
-> seam. Protected like all of `spec/`.
+> seam. Protected like `CLAUDE.md`, which imports it into every session.
 
 ## 1. Contexts
 
 | Context | Responsibility (one line) | Owned data | Language notes |
 |---|---|---|---|
-| <name> | <what it is accountable for> | <tables/collections/graphs it owns> | <terms that mean something specific here> |
+| account | who a user is: accounts, their identities, registration and verification | MongoDB `accounts` | **Account** is the user; **Identity** is one way it proves itself (`password`, `phone`, `apple`, `google`, `meta`); the *primary* email/phone is the login identifier, an OAuth identity's `email` is the provider's asserted record |
+| communication (planned, not in `src/` yet) | delivering messages to people over external channels (email, WhatsApp) | <to be declared with the module> | a *message* here is an outbound delivery, never a domain event |
+
+`@core` is not a context: it is the cross-project standard library (`spec/approved/core.spec.md`)
+and names no business concept.
 
 ## 2. Edges
 
@@ -17,13 +21,15 @@ count as external contexts).
 
 | From → To | Pattern | Surface | Notes |
 |---|---|---|---|
-| <consumer> → <provider> | OHS+PL / ACL | `src/<provider>/1.0/contract/` or `<port name>` | <sync/async, events, snapshot?> |
+| account → communication | OHS+PL: communication publishes `src/communication/1.0/contract/`; account's adapter in `src/account/1.0/infrastructure/` implements account's own port against it | `src/communication/1.0/contract/`, the only surface account may import | sync; account's domain and application never see communication, they depend on the consumer port `VerificationMessageSender` (`src/account/1.0/domain/`, account spec §3.5, §4.3, §4.4). Not wired yet: no adapter is bound today |
+| communication → email provider, WhatsApp (Chatwoot) | ACL | communication's own ports | external contexts; their payloads never cross into the domain |
 
 ## 3. Template→instance seams (snapshot at creation)
 
+None today.
+
 | Template (owner) | Instance (owner) | Snapshotted at |
 |---|---|---|
-| <e.g. course (catalog)> | <e.g. edition (delivery)> | <edition creation> |
 
 ## 4. Shared kernels
 
@@ -55,5 +61,5 @@ Extract a context only when at least one holds — and record which one:
    workspaces) — independent deploys while dependency-cruiser still sees everything.
    A separate repository only when something forces it; that is the moment contract
    tests replace depcruise as the boundary enforcement.
-5. Preconditions checked: per-module config exists (no god Config), @core consumed as a
+5. Preconditions checked: per-module config exists (no god Config), `@core` consumed as a
    versioned package (not a copied folder).

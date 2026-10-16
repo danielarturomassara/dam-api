@@ -39,8 +39,9 @@ file covers workflow and quality gates only. Do not duplicate skill content here
    escapes, no swallowed promise rejections. Fail loudly with domain errors from `@core`.
 5. **When a check fails, fix the code, not the check.**
 6. **Contexts and sharing.** Modules are bounded contexts — apply SKILL §15
-   (contract-only imports, data ownership, snapshot seams, the sharing ladder), and read
-   `spec/approved/context-map.md` before touching any cross-context seam.
+   (contract-only imports, data ownership, snapshot seams, the sharing ladder) and the
+   context map before touching any cross-context seam. The map lives at the project root
+   and is imported here: @context-map.md
 7. Before finishing significant changes, invoke the `adversarial-reviewer` subagent on
    the diff and address its findings.
 8. **Git is read-only for agents.** Never run any git command that writes state (commit, add,
@@ -55,15 +56,16 @@ definitions) and the templates (read `gauntlet/README.md`).
 Location tells a file's nature: `gauntlet/` is copied; `gauntlet.json` (stack, project,
 service) and the thin root configs are the project's declarations; `baseline/` is the
 project's frozen debt; `.devcontainer/` and `docker/` decide what runs on the developer's
-machine; `report/` is disposable output.
+machine; `.claude/`, `CLAUDE.md` and `context-map.md` are what the agent is told, changed only
+through an Edit the owner approves; `report/` is disposable output.
 
 The policy lives in `gauntlet/protectedPaths.mjs` — one list, imported by the hooks AND
 by CI. Fully protected (any change needs the owner): `gauntlet/**`, `baseline/**`,
 `gauntlet.json`, `.dependency-cruiser.cjs`, `vitest.config.ts`, `stryker.config.mjs`,
 `eslint.config.mjs`, `.devcontainer/**`, `docker/compose.yml`, `docker/.env.dist`,
-`.github/workflows/**`, `.claude/settings.json`, `.claude/settings.local.json`,
-`spec/approved/**`, `*.feature`. Existing files under `test/**` are immutable; creating new
-tests is allowed and expected.
+`.github/workflows/**`, `.claude/**`, `CLAUDE.md`, `context-map.md`, `spec/approved/**`,
+`*.feature`. Existing files under `test/**` are immutable; creating new tests is allowed and
+expected.
 Review-required in CI only (hooks stay silent): `tsconfig.json`, `.npmrc` block without
 the label; `package.json`, `cspell.json` emit a warning annotation.
 

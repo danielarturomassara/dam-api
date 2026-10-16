@@ -1586,13 +1586,15 @@ print_manual_steps() { # <docker enabled 0|1>
     '  4. review the seeds: thresholds in vitest.config.ts and stryker.config.mjs, words in cspell.json,' \
     '     conventions in .claude/rules/testing.md and .claude/skills/code-style/SKILL.md,' \
     "     the blank spec templates in spec/template/ (SPEC.template.md, context-map.template.md)$seeds_text" \
-    '  5. create the GitHub label protected-approved once per repository (gh label create protected-approved):' \
+    '  5. fill spec/template/context-map.template.md into context-map.md at the project root and import it' \
+    '     from CLAUDE.md with a line reading @context-map.md (both files are protected, like .claude/)' \
+    '  6. create the GitHub label protected-approved once per repository (gh label create protected-approved):' \
     '     the protected-paths workflow only skips its check on a PR that carries it, and the owner adds it' \
     '     per PR after reading the protected diff' \
-    '  6. bash gauntlet/init.sh --check, then node gauntlet/gauntlet.mjs'
+    '  7. bash gauntlet/init.sh --check, then node gauntlet/gauntlet.mjs'
 
   if [ "$docker_enabled" -eq 1 ] && [ -n "$PLAN_DATABASES" ]; then
-    log '  7. the application reaches its databases at the compose service names — add to .env.example:'
+    log '  8. the application reaches its databases at the compose service names — add to .env.example:'
     render_application_env_block | sed 's/^/       /'
   fi
 }

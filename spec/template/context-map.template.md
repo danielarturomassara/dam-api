@@ -1,7 +1,8 @@
 # Context Map — <project>
 
 > Authored and edited by Daniel only. Agents: read this before touching ANY cross-context
-> seam. Protected like all of `spec/`.
+> seam. The filled map lives at the project root as `context-map.md`, protected like
+> `CLAUDE.md`, which imports it into every session.
 
 ## 1. Contexts
 
@@ -55,5 +56,5 @@ Extract a context only when at least one holds — and record which one:
    workspaces) — independent deploys while dependency-cruiser still sees everything.
    A separate repository only when something forces it; that is the moment contract
    tests replace depcruise as the boundary enforcement.
-5. Preconditions checked: per-module config exists (no god Config), @core consumed as a
+5. Preconditions checked: per-module config exists (no god Config), `@core` consumed as a
    versioned package (not a copied folder).

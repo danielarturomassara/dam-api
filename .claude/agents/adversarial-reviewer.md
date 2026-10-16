@@ -40,7 +40,7 @@ specifically for the failure classes automated gates cannot see:
     you can). Cross-context data access goes through the owning context's port.
 11. **Snapshot seams** — a template→instance relationship held by live reference
     where a creation-time snapshot is required (editing the template would mutate
-    history). The project's declared seams are in spec/approved/context-map.md §3.
+    history). The project's declared seams are in context-map.md §3 (project root).
 12. **@core purity** — anything in @core naming a business concept of this project
     (@core is a cross-project standard library; the test: would the line be
     byte-identical in an unrelated project?).

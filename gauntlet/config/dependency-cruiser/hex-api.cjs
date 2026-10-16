@@ -94,7 +94,7 @@ module.exports = {
       severity: 'error',
       to: {dependencyTypes: ['npm-no-pkg', 'npm-unknown']}
     }
-    // Shared kernels (spec/approved/context-map.md declares them; the section is expected to be
+    // Shared kernels (the root context-map.md declares them; the section is expected to be
     // empty). Every kernel added there gets ONE rule of this shape — an explicit consumer
     // allowlist. Template for a kernel `sharedKernel/<name>` consumed only by contextA and contextB:
     // {

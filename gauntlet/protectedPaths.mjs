@@ -11,16 +11,25 @@
 //               the ratchets (thresholds) or can loosen a gate (eslint)
 //   host        what executes on the developer's machine: the dev container definition and the
 //               compose file it starts (mounts, privileges, images, credentials)
+//   agent       what the agent is told: `.claude/` (hook wiring, the gauntlet command, the reviewer
+//               prompt, the rules, the skill), `CLAUDE.md` and `context-map.md`. The softest
+//               thresholds in the repository, and the agent is the party with a motive to loosen
+//               them: it proposes a change to its own rules the way it proposes a spec
 //   report/     disposable output, gitignored, never protected
 
 // Fully protected: any change (add, modify, delete, rename) requires the owner.
 export const FULLY_PROTECTED_PATTERNS = [
+  /^\.claude\//,
+  /\.claude\/(agents|commands|rules|skills)\//,
   /\.claude\/settings\.json$/,
   /\.claude\/settings\.local\.json$/,
   /^\.dependency-cruiser\.cjs$/,
   /^\.devcontainer\//,
   /^\.github\/workflows\//,
+  /(^|\/)CLAUDE\.local\.md$/i,
+  /(^|\/)CLAUDE\.md$/i,
   /^baseline\//,
+  /^context-map\.md$/i,
   /^docker\/\.env\.dist$/,
   /^docker\/compose\.yml$/,
   /^eslint\.config\.mjs$/,
@@ -31,8 +40,11 @@ export const FULLY_PROTECTED_PATTERNS = [
   /^vitest\.config\.ts$/,
   /\.feature$/
 ];
-// The two settings patterns are deliberately UNANCHORED: they must also catch
-// user-level paths (~/.claude/settings.json) reached via relative traversal.
+// The settings patterns, the instruction-folder pattern and the two CLAUDE files are deliberately
+// UNANCHORED: Claude Code also reads them at the user level (~/.claude, CLAUDE_CONFIG_DIR) and
+// CLAUDE.md from every ancestor directory, all reached via relative traversal. The user-level
+// memory folder (~/.claude/projects/) stays writable on purpose. The root-file patterns are
+// case-insensitive for case-insensitive host file systems.
 
 // Immutable when existing: agents may CREATE new files here, never modify or
 // delete existing ones.
@@ -61,15 +73,17 @@ export const REVIEW_REQUIRED_WARN_PATTERNS = [
 // Known holes, by construction: a path assembled at run time (shell variables, `node -e`,
 // xargs, find -delete) is invisible to a regex. CI is the authoritative gate.
 export const COMMAND_TEXT_PATTERNS = [
-  /\.claude\/settings/,
+  /\.claude\//,
   /(^|[\s'"=/>])\.claude(?![\w./-])/,
   /\.dependency-cruiser\.cjs/,
   /(^|[\s'"=/>])\.devcontainer(?![\w-])/,
   /(^|[\s'"=/>])\.github(?![\w./-])/,
   /\.github\/workflows/,
   /\.feature\b/,
+  /\bCLAUDE\.(local\.)?md\b/i,
   /(^|[\s'"=/>])baseline(?![\w.-])/,
   /--write-baseline\b/,
+  /\bcontext-map\.md\b/i,
   /\bdocker\/(compose\.yml|\.env\.dist)\b/,
   /\beslint\.config\.mjs\b/,
   /(^|[\s'"=/>])gauntlet(?![\w-])/,

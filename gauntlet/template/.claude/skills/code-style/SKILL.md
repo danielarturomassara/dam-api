@@ -557,7 +557,7 @@ with different meaning is the boundary working, not a DRY violation.
   its run), the instance copies what it needs at creation and freezes it; it never
   holds a live reference that lets editing the template mutate history. Not every
   project has such seams — the ones that exist are declared per project in
-  `spec/approved/context-map.md` §3, never hardcoded as examples in this skill.
+  `context-map.md` §3, never hardcoded as examples in this skill.
 - **The sharing ladder** — where a concept lives, first rung that fits:
   1. Universal and semantics-free → `@core` (the cross-project standard library; test:
      would the line be byte-identical in an unrelated project?).
@@ -565,13 +565,13 @@ with different meaning is the boundary working, not a DRY violation.
   3. It belongs to an interaction between contexts → a relationship context that owns
      the interaction as its own aggregate, referencing the others by id.
   4. Genuinely owner-less and worth sharing → a named kernel under
-     `src/sharedKernel/<name>/`, declared in `spec/approved/context-map.md` with owner-of-record
-     and consumer allowlist, plus its depcruise allowlist rule. Expected empty; if a
+     `src/sharedKernel/<name>/`, declared in `context-map.md` with owner-of-record and
+     consumer allowlist, plus its depcruise allowlist rule. Expected empty; if a
      concept is not worth a context-map entry, it is not worth sharing.
   There is no generic `@shared` folder and none may be created.
-- `spec/approved/context-map.md` (owner-authored) lists contexts, edges, snapshot seams, shared
-  kernels, and the extraction triggers/procedure. Read it before touching any
-  cross-context seam.
+- `context-map.md` at the project root (owner-authored, protected, imported by `CLAUDE.md`)
+  lists contexts, edges, snapshot seams, shared kernels, and the extraction
+  triggers/procedure. Read it before touching any cross-context seam.
 
 ## 16. Per-module configuration
 

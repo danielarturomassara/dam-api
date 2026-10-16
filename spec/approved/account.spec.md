@@ -176,22 +176,3 @@ This version does not require: login or sessions of any kind; multi-factor authe
 
 An implementation conforms if it satisfies sections 3–5 and passes the gauntlet.
 The tests that currently embody §3–§4 are test/account/1.0/** (the per-provider registration strategies under application/useCase/registration/, the register envelope, the error responder, the repository port contract suite, and container wiring); a rule added to §4 is expected to arrive with its test.
-
----
-
-## Appendix — changes in this revision (Daniel: review, then delete this section before moving the file)
-
-Base: spec/account.spec.md as of 2026-09-07. Changes agreed in chat:
-
-1. **§4.1 — at most one identity per provider.** Generalized from "one password identity" to one per provider, because the same reasoning covers phone and each oauth provider: multiple credentials of the same kind make login ambiguous, reduce security to the weakest instance, and a silently added duplicate credential is a persistence technique after session hijack. The answer to "should phone be the same?" is yes — and the per-provider rule expresses both (plus one-Google, one-Apple, one-Meta) in a single sentence.
-2. **§3.2 — `password` identity loses `email`, `phone` identity loses `phone`.** If the field must always equal the account's primary contact, storing it twice only creates drift risk (a changed primary leaving a stale credential binding — the recycled-email login hole). The account's primary contact IS the login identifier; the credential is just the secret. Phone gets the symmetric treatment for the symmetric reason.
-3. **§3.2 — oauth identities keep `email`, now explicitly described as the provider's asserted record** (it may legitimately differ from the primary; that difference is real information for linking decisions).
-4. **§3.2 base bullet clarified** (was: "depending the provider it shall have `hash` or `code`", which read as applying to every provider while the table gave oauth neither — the reviewer's finding 9). The base now lists only the truly shared fields (`provider`, `verifiedAt`, `disabledAt` — the latter restored, §4.1's enable/disable rules require it); per-provider data lives in the table alone.
-5. **§4.1 hydration rule extended to "hydrating or serializing"** — matches the implemented behavior (an identity-less account can neither be loaded nor persisted; the reviewer's finding 4).
-6. **§4.3/§4.4 — one new line each** stating the identity holds no contact of its own.
-7. **§4.6 — parenthetical** noting identity-held contacts are now only the oauth emails (the `identityPhones` machinery becomes dormant until an oauth-like phone provider exists, but the rule text stays storage-agnostic).
-
-8. **§3.5 Ports and adapters added** — the spec named no port, token, or adapter, so a from-scratch run could not have produced `AccountRepository`, `Encrypter`, `AccountConfig`, the strategy registry, or their bindings. The table mirrors `core.spec.md` §3.10.
-9. **§4.6 — `update` of an unknown id throws `NotFound('Account')`** (already contract-tested in both adapters; the rule was missing).
-
-Implementation impact when this lands (I will run it on your go): drop `email` from `IdentityProviderPassword` and `phone` from `IdentityProviderPhone` (registration, hydration, uniqueness arrays, tests), add the one-per-provider `Conflict` guard next to the ≥1 invariant. The `@core` `StrictUnion` typing work is independent and already done.

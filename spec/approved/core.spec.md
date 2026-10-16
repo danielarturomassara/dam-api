@@ -290,20 +290,3 @@ The HTTP mapping applied by `errorHandler`, matched by `instanceof` in table ord
 ## 7. Conformance
 
 An implementation conforms if it satisfies sections 3–5 and passes the gauntlet. The tests that embody this document live under `test/core/1.0/**` plus each module's startup-validation wiring test; a rule added to §4 is expected to arrive with its test. `src/App.ts`, `src/cli.ts`, `src/dependencyContainer.ts` and `src/index.ts` are coverage-excluded composition roots.
-
----
-
-## Appendix — decisions embedded in this revision (Daniel: review, then delete this section before moving the file)
-
-Where the body departs from the current code:
-
-1. `Config` is replaced by `CoreConfigEnvironment`, `MongoConfigEnvironment`, `PostgreSqlConfigEnvironment` (interface + token in `domain/`, adapter in `infrastructure/`, the `AccountConfig` shape), all on `EnvironmentReader`; `dotenv` moves to the composition root.
-2. `DATABASE_*` becomes `MONGODB_*` and `POSTGRESQL_*` (`.env`, `.env.example`, compose). Mongo user/password stay optional.
-3. `EnvironmentReader` gains `getOptionalBoolean`.
-4. `META_*`, `CHATWOOT_*`, `DEBUG_RECIPIENT`, `DEBUG_RECIPIENT_ENABLED` move to `communication` under `COMMUNICATION_*`. `ADMIN_URL`, `API_URL`, `SECRET`, `TOKEN_EXPIRATION`, `EMAIL_*` have no consumer and are dropped.
-5. `UseCase` is removed (no subclass exists).
-6. PostgreSQL adapter and config stay in the library, unbound until a consumer exists; the adapter declares `implements DatabaseConnection`.
-7. Mongo `_id` = BSON UUID (`mongodb.UUID`, 16 bytes) everywhere; the adapter's 36-byte text encoding goes. Existing collections need re-seeding or migration.
-8. Adapters translate port vocabulary (§4.1) — for `LoggerWinston` that is `warning` → `warn`.
-9. `HttpServerExpress.start()` mounts routes before listening and resolves once listening.
-10. `baseHandler` uses `HTTP_SUCCESS_CODES.OK`; `cli.ts` no longer sets `LOG_FORMAT`; module routers are constructed with `(coreConfig, logger)`.

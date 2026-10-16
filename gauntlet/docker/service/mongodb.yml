@@ -1,0 +1,19 @@
+# MongoDB for development. Extended by the project's docker/compose.yml when selected; the
+# project adds a data volume on /data/db when it wants persistence. The service name is the
+# host the application reaches it at (MONGODB_HOST=mongodb). The public port binds to the
+# host's loopback only. start_period covers the image's first-run initialization, during which
+# a temporary server already answers ping.
+services:
+  mongodb:
+    image: mongo:${MONGODB_VERSION:?set MONGODB_VERSION in docker/.env}
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:?set MONGODB_USER in docker/.env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?set MONGODB_PASSWORD in docker/.env}
+    ports:
+      - "127.0.0.1:${MONGODB_PUBLIC_PORT:?set MONGODB_PUBLIC_PORT in docker/.env}:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s

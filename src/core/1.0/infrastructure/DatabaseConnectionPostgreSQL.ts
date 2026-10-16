@@ -1,30 +1,29 @@
-import { Config } from '@core/Config.js';
-import { Logger, LOGGER } from '@core/domain/Logger.js';
-import { Nullable } from '@core/domain/type/Nullable.js';
-import { inject, injectable } from 'inversify';
-import { Pool } from 'pg';
+import {DatabaseConnection} from '@core/domain/DatabaseConnection.js';
+import {Logger, LOGGER} from '@core/domain/Logger.js';
+import {POSTGRESQL_CONFIG, PostgreSqlConfig} from '@core/domain/PostgreSqlConfig.js';
+import {Nullable} from '@core/domain/type/Nullable.js';
+import {inject, injectable} from 'inversify';
+import {Pool} from 'pg';
 
 @injectable()
-export class DatabaseConnectionPostgreSQL {
-  private pool: Nullable<Pool>;
+export class DatabaseConnectionPostgreSQL implements DatabaseConnection {
+  private pool: Nullable<Pool> = null;
 
   public constructor (
-    @inject(Config) private config: Config,
-    @inject(LOGGER) private logger: Logger
-  ) {
-    this.pool = null;
-  }
+    @inject(POSTGRESQL_CONFIG) private readonly postgreSqlConfig: PostgreSqlConfig,
+    @inject(LOGGER) private readonly logger: Logger
+  ) {}
 
   public async disconnect (): Promise<void> {
-    if (this.pool) {
-      this.logger.info('Disconnecting from PostgreSQL...');
-
-      await this.pool.end();
-
-      this.pool = null;
+    if (!this.pool) {
+      return;
     }
 
-    return;
+    this.logger.info('Disconnecting from PostgreSQL...');
+
+    await this.pool.end();
+
+    this.pool = null;
   }
 
   public async getDatabase (): Promise<Pool> {
@@ -34,27 +33,19 @@ export class DatabaseConnectionPostgreSQL {
       this.pool = await this.connect();
     }
 
-    return await this.pool;
+    return this.pool;
   }
 
   private async connect (): Promise<Pool> {
-    const databaseHost = this.config.getDatabaseHost();
-    const databasePort = this.config.getDatabasePort();
-    const databaseUser = this.config.getDatabaseUser();
-    const databasePassword = this.config.getDatabasePassword();
-    const databaseName = this.config.getDatabaseName();
-
-    const sslRequired = true;
-
     this.logger.info('Connecting to PostgreSQL (Supabase)...');
 
     const pool = new Pool({
-      database: databaseName,
-      host: databaseHost,
-      password: databasePassword,
-      port: databasePort,
-      ssl: sslRequired ? { rejectUnauthorized: false } : false,
-      user: databaseUser
+      database: this.postgreSqlConfig.getDatabaseName(),
+      host: this.postgreSqlConfig.getHost(),
+      password: this.postgreSqlConfig.getPassword(),
+      port: this.postgreSqlConfig.getPort(),
+      ssl: {rejectUnauthorized: false},
+      user: this.postgreSqlConfig.getUser()
     });
 
     const client = await pool.connect();

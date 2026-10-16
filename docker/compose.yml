@@ -1,0 +1,19 @@
+# Rendered by gauntlet/init.sh from the project's answers; owned by the project afterwards.
+# Service definitions live in gauntlet/docker/service/ and are shared through `extends`; every
+# variable comes from docker/.env (copy of docker/.env.dist). The build location is restated
+# under the service so it is unambiguous whichever way Compose resolves an extended path.
+services:
+  api:
+    extends:
+      file: ../gauntlet/docker/service/app.yml
+      service: app
+    build:
+      context: ../gauntlet/docker
+      dockerfile: Dockerfile
+    depends_on:
+      mongodb:
+        condition: service_healthy
+  mongodb:
+    extends:
+      file: ../gauntlet/docker/service/mongodb.yml
+      service: mongodb

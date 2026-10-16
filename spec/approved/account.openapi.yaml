@@ -1,0 +1,172 @@
+openapi: 3.1.0
+info:
+  title: Account module
+  version: "1.0"
+  description: Machine-readable form of spec/approved/account.spec.md §3.3. The prose tables and this document say the same thing; when they disagree, the prose wins. The register endpoint contract suite pins each implemented response row against the running stack.
+paths:
+  /auth/register:
+    post:
+      operationId: register
+      summary: Register an account with one identity provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "202":
+          description: The account was created, or the primary contact already belongs to an account and the provider creates its identity unverified (password, phone) — the duplicate is silenced.
+        "400":
+          description: The body is malformed or fails a rule in §4.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reason"
+              examples:
+                missingProvider:
+                  value: "provider is required"
+                unknownProvider:
+                  value: "Unknown provider: carrier-pigeon"
+                missingField:
+                  value: "password is required for password provider"
+                mistypedField:
+                  value: "phone must be a string for phone provider"
+                malformedJson:
+                  value: "Malformed JSON body"
+        "409":
+          description: The primary contact already belongs to an account and the provider creates its identity already verified (oauth).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reason"
+              examples:
+                email:
+                  value: "Conflict: email."
+                phone:
+                  value: "Conflict: phone."
+        "501":
+          description: The functionality is not implemented.
+        "500":
+          description: Anything the module did not anticipate.
+          content:
+            application/json:
+              schema:
+                type: string
+                const: "Unknown error"
+components:
+  schemas:
+    Reason:
+      type: string
+      description: The reason, serialized as a JSON string.
+    RegisterRequest:
+      description: Unknown fields at any depth are ignored. Field names inside providerData are the provider's own and are not translated.
+      oneOf:
+        - $ref: "#/components/schemas/PasswordRegistration"
+        - $ref: "#/components/schemas/PhoneRegistration"
+        - $ref: "#/components/schemas/AppleRegistration"
+        - $ref: "#/components/schemas/GoogleRegistration"
+        - $ref: "#/components/schemas/MetaRegistration"
+      discriminator:
+        propertyName: provider
+        mapping:
+          password: "#/components/schemas/PasswordRegistration"
+          phone: "#/components/schemas/PhoneRegistration"
+          apple: "#/components/schemas/AppleRegistration"
+          google: "#/components/schemas/GoogleRegistration"
+          meta: "#/components/schemas/MetaRegistration"
+    PasswordRegistration:
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: password
+        providerData:
+          type: object
+          required: [email, password]
+          properties:
+            email:
+              type: string
+              format: email
+              description: Lower-cased before validation and storage.
+            password:
+              type: string
+              minLength: 8
+              description: At most 72 bytes; must satisfy the configured composition rules (§3.4).
+    PhoneRegistration:
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: phone
+        providerData:
+          type: object
+          required: [phone]
+          properties:
+            phone:
+              type: string
+              description: International form; normalized to E.164 only when it carries a + or 00 prefix.
+    AppleRegistration:
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: apple
+        providerData:
+          type: object
+          description: Sign in with Apple authorization response, verbatim.
+          required: [code, id_token, state]
+          properties:
+            code: {type: string}
+            id_token: {type: string}
+            state: {type: string}
+            user:
+              type: object
+              required: [email, name]
+              properties:
+                email: {type: string, format: email}
+                name:
+                  type: object
+                  required: [firstName, lastName]
+                  properties:
+                    firstName: {type: string}
+                    lastName: {type: string}
+    GoogleRegistration:
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: google
+        providerData:
+          type: object
+          description: Google OAuth token response, verbatim.
+          required: [access_token, expires_in, id_token, scope, token_type]
+          properties:
+            access_token: {type: string}
+            expires_in: {type: number}
+            id_token: {type: string}
+            refresh_token: {type: string}
+            scope: {type: string}
+            token_type: {type: string}
+    MetaRegistration:
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: meta
+        providerData:
+          type: object
+          description: Facebook SDK login response, verbatim.
+          required: [authResponse, status]
+          properties:
+            authResponse:
+              type: object
+              required: [accessToken, expiresIn, userID]
+              properties:
+                accessToken: {type: string}
+                expiresIn:
+                  oneOf:
+                    - {type: number}
+                    - {type: string}
+                userID: {type: string}
+            status: {type: string}

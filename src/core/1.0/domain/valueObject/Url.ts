@@ -1,13 +1,20 @@
-import { ValueObject } from '@core/domain/valueObject/ValueObject.js';
+import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
+import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
 
-export class Url extends ValueObject<string> {
-  public constructor (value: string) {
+export class Url extends TrimmedString {
+  public static fromPrimitives (primitives: string): Url {
+    return new Url(primitives);
+  }
+
+  private constructor (value: string) {
     super(value);
 
     this.ensureIsValidUrl();
   }
 
   private ensureIsValidUrl (): void {
-    new URL(this.value);
+    if (!URL.canParse(this.value)) {
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
+    }
   }
 }

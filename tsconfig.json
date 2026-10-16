@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
@@ -8,16 +7,15 @@
     "isolatedModules": false,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": "dist",
     "paths": {
-      "@communication/*": [
-        "communication/1.0/*"
+      "@account/*": [
+        "./src/account/1.0/*"
       ],
       "@core/*": [
-        "core/1.0/*"
+        "./src/core/1.0/*"
       ],
       "@src/*": [
-        "*"
+        "./src/*"
       ]
     },
     "removeComments": true,
@@ -29,6 +27,7 @@
     "target": "ESNext"
   },
   "exclude": [
+    "gauntlet/template",
     "node_modules"
   ],
   "ts-node": {

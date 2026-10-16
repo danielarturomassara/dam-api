@@ -1,0 +1,5 @@
+{
+  "project": "dam",
+  "service": "api",
+  "stack": "hex-api"
+}

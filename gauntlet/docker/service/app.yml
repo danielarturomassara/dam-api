@@ -1,0 +1,20 @@
+# The development container of a repository. The project's docker/compose.yml extends this
+# service under the repository's own service name (api, app, admin). Every variable comes from
+# docker/.env and is required: a missing one stops compose naming the variable, never an empty
+# image tag or port. One file per service so that only the selected services are loaded and
+# their variables demanded. Published ports bind to the host's loopback only: the Node inspector
+# on 9229 is remote code execution for anyone who can reach it.
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION:?set NODE_VERSION in docker/.env (an alpine tag, e.g. 26-alpine)}
+        SERVICE_NAME: ${SERVICE_NAME:?set SERVICE_NAME in docker/.env}
+    environment:
+      - NODE_ENV=development
+    command: sleep infinity
+    ports:
+      - "127.0.0.1:${SERVICE_PUBLIC_DEBUG_PORT:?set SERVICE_PUBLIC_DEBUG_PORT in docker/.env}:9229"
+      - "127.0.0.1:${SERVICE_PUBLIC_PORT:?set SERVICE_PUBLIC_PORT in docker/.env}:${SERVICE_PORT:?set SERVICE_PORT in docker/.env}"

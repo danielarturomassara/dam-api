@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "import": [
+    "./gauntlet/config/cspell.json"
+  ],
+  "language": "en",
+  "version": "0.2",
+  "words": []
+}

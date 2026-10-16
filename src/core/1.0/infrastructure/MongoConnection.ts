@@ -1,65 +1,64 @@
-import { Config } from '@core/Config.js';
-import { Logger, LOGGER } from '@core/domain/Logger.js';
-import { Nullable } from '@core/domain/type/Nullable.js';
-import { inject, injectable } from 'inversify';
-import * as mongodb from 'mongodb';
+import {Logger, LOGGER} from '@core/domain/Logger.js';
+import {MONGO_CONFIG, MongoConfig} from '@core/domain/MongoConfig.js';
+import {Nullable} from '@core/domain/type/Nullable.js';
+import {inject, injectable} from 'inversify';
+import {Db, MongoClient} from 'mongodb';
 
 @injectable()
 export class MongoConnection {
-  private client: Nullable<mongodb.MongoClient>;
-  private databaseName: string;
+  private client: Nullable<MongoClient> = null;
 
   public constructor (
-    @inject(Config) private config: Config,
-    @inject(LOGGER) private logger: Logger
-  ) {
-    this.client = null;
-    this.databaseName = this.config.getDatabaseName();
-  }
+    @inject(MONGO_CONFIG) private readonly mongoConfig: MongoConfig,
+    @inject(LOGGER) private readonly logger: Logger
+  ) {}
 
   public async disconnect (): Promise<void> {
-    if (this.client) {
-      this.logger.info('Disconnecting from mongodb...');
-
-      await this.client.close();
-
-      this.client = null;
+    if (!this.client) {
+      return;
     }
 
-    return;
+    this.logger.info('Disconnecting from mongodb...');
+
+    await this.client.close();
+
+    this.client = null;
   }
 
-  public async getDatabase (): Promise<mongodb.Db> {
+  public async getDatabase (): Promise<Db> {
     if (!this.client) {
       this.logger.warning('Connection not yet established. Trying again...');
 
       this.client = await this.connect();
     }
 
-    return this.client.db(this.databaseName);
+    return this.client.db(this.mongoConfig.getDatabaseName());
   }
 
-  private async connect (): Promise<mongodb.MongoClient> {
-    const databasePort = this.config.getDatabasePort();
-    const connectionString = `mongodb://${ this.getCredentialsString() }:${ databasePort }/?authSource=${
-      this.databaseName
-    }`;
-    const client = new mongodb.MongoClient(connectionString);
+  private buildConnectionString (): string {
+    const port = this.mongoConfig.getPort();
+    const databaseName = this.mongoConfig.getDatabaseName();
 
-    this.logger.info('Connecting to mongodb...');
-
-    return await client.connect();
+    return `mongodb://${this.buildCredentials()}:${port}/?authSource=${databaseName}`;
   }
 
-  private getCredentialsString (): string {
-    const databaseUser = this.config.getDatabaseUser();
-    const databasePassword = this.config.getDatabasePassword();
-    const databaseHost = this.config.getDatabaseHost();
+  private buildCredentials (): string {
+    const host = this.mongoConfig.getHost();
+    const user = this.mongoConfig.getUser();
+    const password = this.mongoConfig.getPassword();
 
-    if (!databaseUser || !databasePassword) {
-      return databaseHost;
+    if (user === null || password === null) {
+      return host;
     }
 
-    return `${ databaseUser }:${ databasePassword }@${ databaseHost }`;
+    return `${user}:${password}@${host}`;
+  }
+
+  private async connect (): Promise<MongoClient> {
+    this.logger.info('Connecting to mongodb...');
+
+    const client = new MongoClient(this.buildConnectionString());
+
+    return client.connect();
   }
 }

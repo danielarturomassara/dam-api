@@ -1,0 +1,19 @@
+# Neo4j for development. Extended by the project's docker/compose.yml when selected; the project
+# adds a data volume on /data when it wants persistence. Neo4j fixes the user to `neo4j` and
+# requires a password of at least eight characters. Bolt is the application port; the HTTP port
+# serves the browser UI. The service name is the host (NEO4J_HOST=neo4j). Both public ports bind
+# to the host's loopback only.
+services:
+  neo4j:
+    image: neo4j:${NEO4J_VERSION:?set NEO4J_VERSION in docker/.env}
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:?set NEO4J_USER in docker/.env}/${NEO4J_PASSWORD:?set NEO4J_PASSWORD in docker/.env}
+    ports:
+      - "127.0.0.1:${NEO4J_PUBLIC_PORT:?set NEO4J_PUBLIC_PORT in docker/.env}:7687"
+      - "127.0.0.1:${NEO4J_PUBLIC_HTTP_PORT:?set NEO4J_PUBLIC_HTTP_PORT in docker/.env}:7474"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s

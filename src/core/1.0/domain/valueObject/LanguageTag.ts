@@ -1,8 +1,12 @@
-import { InvalidArgument } from '@core/domain/error/InvalidArgument.js';
-import { TrimmedString } from '@core/domain/valueObject/TrimmedString.js';
+import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
+import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
 
 export class LanguageTag extends TrimmedString {
-  public constructor (value: string) {
+  public static fromPrimitives (primitives: string): LanguageTag {
+    return new LanguageTag(primitives);
+  }
+
+  private constructor (value: string) {
     super(value);
 
     this.ensureIsValidLanguageTag();
@@ -11,8 +15,8 @@ export class LanguageTag extends TrimmedString {
   private ensureIsValidLanguageTag (): void {
     try {
       new Intl.Locale(this.value);
-    } catch (_error) {
-      throw new InvalidArgument(`<${ this.constructor.name }> does not allow the value <${ this.value }>`);
+    } catch {
+      throw new InvalidArgument({value: this.value, valueObjectName: this.constructor.name});
     }
   }
 }

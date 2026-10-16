@@ -1,15 +1,12 @@
 import 'reflect-metadata';
-import { HTTP_SERVER, HttpServer } from '@core/domain/HttpServer.js';
-import { inject } from 'inversify';
+import {HTTP_SERVER, HttpServer} from '@core/domain/HttpServer.js';
+import {inject, injectable} from 'inversify';
 
+@injectable()
 export class App {
-  public server: HttpServer;
-
-  public constructor (@inject(HTTP_SERVER) server: HttpServer) {
-    this.server = server;
-  }
+  public constructor (@inject(HTTP_SERVER) private readonly httpServer: HttpServer) {}
 
   public async start (): Promise<void> {
-    await this.server.start();
+    await this.httpServer.start();
   }
 }

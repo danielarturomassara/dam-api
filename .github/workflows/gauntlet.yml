@@ -1,0 +1,54 @@
+name: gauntlet
+
+concurrency:
+  cancel-in-progress: true
+  group: gauntlet-${{ github.ref }}
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  gauntlet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version-file: package.json
+      - run: npm ci
+      - run: node gauntlet/gauntlet.mjs
+
+  mutation:
+    needs: gauntlet
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version-file: package.json
+      - run: npm ci
+      - uses: actions/cache/restore@v4
+        with:
+          key: stryker-incremental-${{ github.ref_name }}-${{ github.run_id }}
+          path: report/stryker-incremental.json
+          restore-keys: |
+            stryker-incremental-${{ github.ref_name }}-
+            stryker-incremental-main-
+      - name: Mutation testing (skips until test/ exists)
+        run: |
+          if [ ! -d test ]; then
+            echo "::notice::no test/ directory yet — skipping mutation testing"
+            exit 0
+          fi
+          node gauntlet/gauntlet.mjs --only mutation
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          key: stryker-incremental-${{ github.ref_name }}-${{ github.run_id }}
+          path: report/stryker-incremental.json

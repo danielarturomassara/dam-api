@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Account module
   version: "1.0"
-  description: Machine-readable form of spec/approved/account.spec.md §3.3. The prose tables and this document say the same thing; when they disagree, the prose wins. The register endpoint contract suite pins each implemented response row against the running stack.
+  description: Machine-readable form of spec/approved/account.spec.md §3.3 and §3.6–§3.8. The prose tables and this document say the same thing; when they disagree, the prose wins. The endpoint contract suites pin each implemented response row against the running stack.
 paths:
   /auth/register:
     post:
@@ -45,16 +45,185 @@ paths:
                   value: "Conflict: email."
                 phone:
                   value: "Conflict: phone."
+        "429":
+          $ref: "#/components/responses/Throttled"
         "501":
           description: The functionality is not implemented.
         "500":
-          description: Anything the module did not anticipate.
+          $ref: "#/components/responses/UnknownError"
+  /auth/login:
+    post:
+      operationId: login
+      summary: Prove the credential of one identity provider and receive an access token and a refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: The credential is proven and the identity may log in.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginTokens"
+        "400":
+          description: The body is malformed or fails a rule in §4.8.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reason"
+              examples:
+                missingProvider:
+                  value: "provider is required"
+                unknownProvider:
+                  value: "Unknown provider: carrier-pigeon"
+                missingField:
+                  value: "password is required for password provider"
+                mistypedField:
+                  value: "code must be a string for phone provider"
+                malformedJson:
+                  value: "Malformed JSON body"
+        "401":
+          description: The credential is not proven. One message for every cause.
+          headers:
+            WWW-Authenticate:
+              $ref: "#/components/headers/BearerChallenge"
           content:
             application/json:
               schema:
                 type: string
-                const: "Unknown error"
+                const: "Unauthorized. Reason: Invalid credentials."
+        "403":
+          description: The credential is proven and the account or the identity may not log in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginNotAllowed"
+        "429":
+          $ref: "#/components/responses/Throttled"
+        "501":
+          description: The provider's flow is not implemented.
+        "500":
+          $ref: "#/components/responses/UnknownError"
+  /auth/login/code:
+    post:
+      operationId: requestLoginCode
+      summary: Send a one-time login code to the owner of an identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginCodeRequest"
+      responses:
+        "202":
+          description: A code was sent, or the request was silenced — the phone belongs to no account, the account has no phone identity, the identity may not log in, or a code was requested less than the resend interval ago.
+        "400":
+          description: The body is malformed, fails a rule in §4.8, or names a provider that sends no codes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reason"
+              examples:
+                missingField:
+                  value: "phone is required for phone provider"
+                providerWithoutCodes:
+                  value: "password provider does not send login codes"
+        "429":
+          $ref: "#/components/responses/Throttled"
+        "501":
+          description: Code delivery is not implemented.
+        "500":
+          $ref: "#/components/responses/UnknownError"
+  /auth/token/refresh:
+    post:
+      operationId: refreshAccessToken
+      summary: Exchange a refresh token for a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: The refresh token is valid and its identity may log in. No new refresh token is issued.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessTokenOnly"
+        "400":
+          description: The body is malformed, or refreshToken is missing or not a string.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reason"
+              examples:
+                missingToken:
+                  value: "refreshToken is required"
+                mistypedToken:
+                  value: "refreshToken must be a string"
+        "401":
+          description: The refresh token is not valid, or its account or identity no longer exists. One message for every cause.
+          headers:
+            WWW-Authenticate:
+              $ref: "#/components/headers/BearerChallenge"
+          content:
+            application/json:
+              schema:
+                type: string
+                const: "Unauthorized. Reason: Invalid refresh token."
+        "403":
+          description: The refresh token is valid and the account or the identity may not log in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginNotAllowed"
+        "500":
+          $ref: "#/components/responses/UnknownError"
 components:
+  headers:
+    BearerChallenge:
+      description: The challenge every 401 answer carries (core.spec.md §4.5).
+      schema:
+        type: string
+        const: Bearer
+    NoStore:
+      description: Token answers are never stored by caches.
+      schema:
+        type: string
+        const: no-store
+    RetryAfter:
+      description: Whole seconds until the throttle window ends, at least 1.
+      schema:
+        type: integer
+        minimum: 1
+  responses:
+    Throttled:
+      description: The client address exceeded the throttle (§4.7).
+      headers:
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+      content:
+        application/json:
+          schema:
+            type: string
+            const: "Too many requests."
+    UnknownError:
+      description: Anything the module did not anticipate.
+      content:
+        application/json:
+          schema:
+            type: string
+            const: "Unknown error"
   schemas:
     Reason:
       type: string
@@ -170,3 +339,109 @@ components:
                     - {type: string}
                 userID: {type: string}
             status: {type: string}
+    LoginNotAllowed:
+      type: string
+      enum:
+        - "Login not allowed. Reason: account disabled."
+        - "Login not allowed. Reason: identity disabled."
+        - "Login not allowed. Reason: identity not verified."
+    LoginTokens:
+      type: object
+      required: [accessToken, expiresIn, refreshExpiresIn, refreshToken, tokenType]
+      properties:
+        accessToken:
+          type: string
+          description: JSON Web Token signed with HS256; claims in §3.9.
+        expiresIn:
+          type: integer
+          description: Lifetime of the access token in seconds.
+        refreshExpiresIn:
+          type: integer
+          description: Lifetime of the refresh token in seconds.
+        refreshToken:
+          type: string
+          description: JSON Web Token signed with HS256; claims in §3.9.
+        tokenType:
+          const: Bearer
+    AccessTokenOnly:
+      type: object
+      required: [accessToken, expiresIn, tokenType]
+      properties:
+        accessToken:
+          type: string
+          description: JSON Web Token signed with HS256; claims in §3.9.
+        expiresIn:
+          type: integer
+          description: Lifetime of the access token in seconds.
+        tokenType:
+          const: Bearer
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    LoginRequest:
+      description: Unknown fields at any depth are ignored. The oauth shapes are the registration shapes, verbatim.
+      oneOf:
+        - $ref: "#/components/schemas/PasswordLogin"
+        - $ref: "#/components/schemas/PhoneLogin"
+        - $ref: "#/components/schemas/AppleRegistration"
+        - $ref: "#/components/schemas/GoogleRegistration"
+        - $ref: "#/components/schemas/MetaRegistration"
+      discriminator:
+        propertyName: provider
+        mapping:
+          password: "#/components/schemas/PasswordLogin"
+          phone: "#/components/schemas/PhoneLogin"
+          apple: "#/components/schemas/AppleRegistration"
+          google: "#/components/schemas/GoogleRegistration"
+          meta: "#/components/schemas/MetaRegistration"
+    PasswordLogin:
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: password
+        providerData:
+          type: object
+          required: [email, password]
+          properties:
+            email:
+              type: string
+              format: email
+              description: The account's primary email. Lower-cased before validation.
+            password:
+              type: string
+              description: No length or composition rule applies at login; a password longer than 72 bytes is never proven.
+    PhoneLogin:
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: phone
+        providerData:
+          type: object
+          required: [phone, code]
+          properties:
+            phone:
+              type: string
+              description: The account's primary phone in international form; normalized to E.164 only when it carries a + or 00 prefix.
+            code:
+              type: string
+              pattern: "^[0-9]+$"
+              description: The one-time code obtained through POST /auth/login/code.
+    LoginCodeRequest:
+      description: Only the phone provider sends login codes.
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: phone
+        providerData:
+          type: object
+          required: [phone]
+          properties:
+            phone:
+              type: string
+              description: The account's primary phone in international form; normalized to E.164 only when it carries a + or 00 prefix.

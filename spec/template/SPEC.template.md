@@ -1,7 +1,6 @@
 # <Module> Specification
 
-> Authored and edited by Daniel only. Agents: read-only. Implementation conforms to this
-> document; when they disagree, this document wins.
+> Authored and edited by Daniel only. Agents: read-only. Implementation conforms to this document; when they disagree, this document wins.
 
 ## 1. Purpose
 
@@ -13,8 +12,7 @@ Defines: <contract, behavior rules, errors>. Does not define: <explicit non-goal
 
 ## 3. Contract
 
-<HTTP endpoints or use-case signatures. Method, path, request shape, response shape,
-success codes.>
+<HTTP endpoints or use-case signatures. Method, path, request shape, response shape, success codes.>
 
 ## 4. Behavior
 
@@ -25,8 +23,7 @@ success codes.>
 
 ## 5. Errors
 
-<Domain error per failure condition, mapped from @core: InvalidArgument, Conflict,
-NotFound, Unauthorized, Forbidden, ServerError.>
+<Domain error per failure condition, mapped from @core: InvalidArgument, Conflict, NotFound, Unauthorized, Forbidden, ServerError.>
 
 ## 6. Non-goals
 

@@ -5,6 +5,7 @@ export interface CoreConfig {
   getApiPort (): number;
   getLogLevel (): LOG_LEVELS;
   getNodeEnvironment (): string;
+  getTrustedProxyCount (): number;
   isDebugEnabled (): boolean;
 }
 

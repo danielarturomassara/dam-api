@@ -66,8 +66,6 @@ export class PasswordRegistration extends BaseRegistration<ProviderPassword> {
     const existingAccount = await this.accountRepository.findByEmail(Email.fromPrimitives(emailString));
 
     if (existingAccount) {
-      // TODO(spec §4.3): notify the existing owner ("someone tried to register with your email")
-      // through VerificationMessageSender once the communication context provides its adapter.
       throw new DuplicateContact('email');
     }
   }

@@ -4,9 +4,6 @@ import {describe, expect, it} from 'vitest';
 
 import {buildPasswordIdentity} from '../../double/accountFixtures.js';
 
-// Pins spec/approved/account.spec.md §4.1: every identity extends TimestampedEntity and refuses a repeated
-// verify, enable or disable with Conflict.
-
 describe('BaseIdentity', (): void => {
   it('extends TimestampedEntity and starts enabled and unverified', (): void => {
     const identity = buildPasswordIdentity();

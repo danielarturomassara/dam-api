@@ -1,5 +1,7 @@
 import {Identity, IdentityPrimitives} from '@account/domain/entity/Identity.js';
 import {IdentityFactory} from '@account/domain/entity/IdentityFactory.js';
+import {LoginNotAllowed} from '@account/domain/error/LoginNotAllowed.js';
+import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {TimestampedEntity, TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
 import {Conflict} from '@core/domain/error/Conflict.js';
 import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
@@ -48,8 +50,26 @@ export class Account extends TimestampedEntity {
     this.#identities.push(identity);
   }
 
+  public ensureCanAuthenticateWith (identity: Identity): void {
+    if (this.isDisabled()) {
+      throw new LoginNotAllowed('account disabled');
+    }
+
+    if (identity.isDisabled()) {
+      throw new LoginNotAllowed('identity disabled');
+    }
+
+    if (!identity.isVerified()) {
+      throw new LoginNotAllowed('identity not verified');
+    }
+  }
+
   public getIdentities (): ReadonlyArray<Identity> {
     return [...this.#identities];
+  }
+
+  public getIdentity (provider: IDENTITY_PROVIDERS): Nullable<Identity> {
+    return this.#identities.find((identity) => identity.provider === provider) ?? null;
   }
 
   public hasIdentities (): boolean {
@@ -58,6 +78,14 @@ export class Account extends TimestampedEntity {
 
   public isDisabled (): boolean {
     return this.#disabledAt !== null;
+  }
+
+  public matchesPrimaryEmail (email: Email): boolean {
+    return this.primaryEmail?.toPrimitives() === email.toPrimitives();
+  }
+
+  public matchesPrimaryPhone (phone: Phone): boolean {
+    return this.primaryPhone?.toPrimitives() === phone.toPrimitives();
   }
 
   public removeIdentity (identityId: Uuid): void {

@@ -1,9 +1,6 @@
 import {StrictUnion} from '@core/domain/type/StrictUnion.js';
 import {describe, expect, expectTypeOf, it} from 'vitest';
 
-// TYPE tests: the assertions are validated by `npm run type-check`; each ts-expect-error line
-// fails the type-check if the rejection it pins ever stops happening.
-
 interface CircleShape {
   kind: 'circle';
   radius: number;

@@ -4,6 +4,7 @@ import {HTTP_ROUTER, HttpRouter} from '@core/domain/HttpRouter.js';
 import {HTTP_SERVER, HttpServer} from '@core/domain/HttpServer.js';
 import {LOGGER, Logger} from '@core/domain/Logger.js';
 import {MONGO_CONFIG, MongoConfig} from '@core/domain/MongoConfig.js';
+import {REQUEST_THROTTLE, RequestThrottle} from '@core/domain/RequestThrottle.js';
 import {STARTUP_CONFIG_VALIDATION} from '@core/domain/StartupConfigValidation.js';
 import {CoreConfigEnvironment} from '@core/infrastructure/CoreConfigEnvironment.js';
 import {EnvironmentReaderProcessEnv} from '@core/infrastructure/EnvironmentReaderProcessEnv.js';
@@ -14,6 +15,7 @@ import {MongoConfigEnvironment} from '@core/infrastructure/MongoConfigEnvironmen
 import {MongoConnection} from '@core/infrastructure/MongoConnection.js';
 import {DataSeeder} from '@core/infrastructure/mongodb/migration/DataSeeder.js';
 import {RepositoryMongo} from '@core/infrastructure/mongodb/RepositoryMongo.js';
+import {RequestThrottleInMemory} from '@core/infrastructure/RequestThrottleInMemory.js';
 import {ContainerModule, ContainerModuleLoadOptions} from 'inversify';
 
 export default new ContainerModule((options: ContainerModuleLoadOptions) => {
@@ -25,6 +27,7 @@ export default new ContainerModule((options: ContainerModuleLoadOptions) => {
   options.bind<Logger>(LOGGER).to(LoggerWinston).inSingletonScope();
   options.bind<HttpServer>(HTTP_SERVER).to(HttpServerExpress);
   options.bind<HttpRouter>(HTTP_ROUTER).to(HttpRouterExpress);
+  options.bind<RequestThrottle>(REQUEST_THROTTLE).to(RequestThrottleInMemory).inSingletonScope();
   options.bind<MongoConnection>(MongoConnection).toSelf().inSingletonScope();
   options.bind<RepositoryMongo>(RepositoryMongo).toSelf();
   options.bind<DataSeeder>(DataSeeder).toSelf();

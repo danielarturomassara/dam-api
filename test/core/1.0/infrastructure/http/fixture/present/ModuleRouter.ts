@@ -4,8 +4,6 @@ import {HttpRouter} from '@core/domain/HttpRouter.js';
 import {Logger} from '@core/domain/Logger.js';
 import {Router} from 'express';
 
-// Discovery fixture: a well-formed module router the HttpRouterExpress suite discovers by
-// changing the working directory to the fixture root.
 export class ModuleRouter implements HttpRouter {
   public constructor (
     private readonly coreConfig: CoreConfig,

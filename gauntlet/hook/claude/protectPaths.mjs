@@ -5,6 +5,9 @@
 // nothing is hard-denied in-session — CI remains the authoritative gate.
 // Untracked files under the immutable-test patterns are still being authored and
 // stay freely editable: committing a test is the act that freezes it.
+// Batch grant (owner approves once, in-session): a valid, unexpired
+// .claude/grant/protectedEdits.json lets Edit/Write through for the paths it lists
+// (gauntlet/protectedEditGrant.mjs). Writing the grant is itself a protected write.
 // Bulk escape hatch (owner only): launch with GAUNTLET_ALLOW_PROTECTED_EDITS=1;
 // hooks inherit the env of the Claude Code process, so this cannot be flipped
 // from inside a session.
@@ -17,6 +20,7 @@ import {
   isEscapeHatchActive,
   matchesAny
 } from '../../protectedPaths.mjs';
+import {isCoveredByGrant} from '../../protectedEditGrant.mjs';
 
 if (process.env.CLAUDE_PROJECT_DIR) {
   process.chdir(process.env.CLAUDE_PROJECT_DIR);
@@ -63,6 +67,10 @@ if (!targetFilePath || isEscapeHatchActive()) {
 // resolve() normalizes a relative file_path (`./CLAUDE.md`, `src/../CLAUDE.md`) before the
 // anchored patterns see it.
 const relativeFilePath = relative(process.cwd(), resolve(targetFilePath)).replaceAll('\\', '/');
+
+if (isCoveredByGrant(relativeFilePath)) {
+  process.exit(0);
+}
 
 if (matchesAny(FULLY_PROTECTED_PATTERNS, relativeFilePath)) {
   askOwner('Protected path (owner-only): ' + relativeFilePath + '. Approve only if you authorized this exact change.');

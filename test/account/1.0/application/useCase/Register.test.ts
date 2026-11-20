@@ -7,8 +7,6 @@ import {AccountRepositoryInMemory} from '../../double/AccountRepositoryInMemory.
 import {buildRegistrationStrategyRegistry} from '../../double/buildRegistrationStrategyRegistry.js';
 import {EncrypterFake} from '../../double/EncrypterFake.js';
 
-// Pins spec/approved/account.spec.md §4.2 (envelope rules) and the account each provider creates.
-
 const buildRegister = (accountRepository: AccountRepositoryInMemory = new AccountRepositoryInMemory()): Register => {
   return new Register(accountRepository, buildRegistrationStrategyRegistry(accountRepository));
 };

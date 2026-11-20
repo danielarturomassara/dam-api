@@ -46,8 +46,6 @@ import {describe, expect, it} from 'vitest';
 import {LoggerSpy} from '../../../double/LoggerSpy.js';
 import {ResponseRecorder} from '../../../double/ResponseRecorder.js';
 
-// Pins spec/approved/core.spec.md §5: the full domain-error → HTTP map.
-
 class DuplicateThing extends Conflict {}
 
 const handle = (error: Error): {logger: LoggerSpy; response: ResponseRecorder} => {

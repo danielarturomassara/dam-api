@@ -6,8 +6,6 @@ import {describe, expect, it} from 'vitest';
 import {AccountConfigFake} from '../../../double/AccountConfigFake.js';
 import {AccountRepositoryInMemory} from '../../../double/AccountRepositoryInMemory.js';
 
-// Pins spec/approved/account.spec.md §4.2 (phone normalization) and §4.4.
-
 const buildPhoneRegistration = (
   accountRepository: AccountRepositoryInMemory = new AccountRepositoryInMemory(),
   accountConfig: AccountConfigFake = new AccountConfigFake()

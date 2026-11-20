@@ -41,8 +41,6 @@ import {UriTooLong} from '@core/domain/error/UriTooLong.js';
 import {VariantAlsoNegotiates} from '@core/domain/error/VariantAlsoNegotiates.js';
 import {describe, expect, it} from 'vitest';
 
-// Pins spec/approved/core.spec.md §3.5: every error class, its constructor and its exact message.
-
 const namedErrorList: Array<[string, Error, string]> = [
   ['InvalidArgument (value object)', new InvalidArgument({value: 'x', valueObjectName: 'Email'}), '<Email> does not allow the value <x>'],
   ['InvalidArgument (custom)', new InvalidArgument({customMessage: 'provider is required'}), 'provider is required'],

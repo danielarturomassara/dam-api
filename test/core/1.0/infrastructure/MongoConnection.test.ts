@@ -6,9 +6,6 @@ import {LoggerSpy} from '../double/LoggerSpy.js';
 import {MongoConfigFake} from '../double/MongoConfigFake.js';
 import {MongoTestServer} from '../double/MongoTestServer.js';
 
-// The compose mongod authenticates its users against `admin`, and the adapter's connection string
-// uses the configured database as authSource — so this suite targets the `admin` database, the
-// only one the spec's string can authenticate against with a root user.
 const mongoTestServer = new MongoTestServer('admin');
 
 let mongoConfig: MongoConfig;

@@ -9,9 +9,6 @@ import {expect, it} from 'vitest';
 
 import {buildEmailAccount, buildGoogleAccount, buildGoogleIdentity, buildPhoneAccount} from '../double/accountFixtures.js';
 
-// The AccountRepository port contract (spec/approved/account.spec.md §3.5 and §4.6). Every adapter of the
-// port runs this suite; passing it is the definition of a correct adapter.
-
 export interface AccountRepositoryContractContext {
   buildRepository: () => Promise<AccountRepository>;
 }

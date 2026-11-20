@@ -8,8 +8,6 @@ import {describe, expect, it} from 'vitest';
 
 import {buildEmailAccount, buildGoogleIdentity, buildPasswordIdentity, buildPhoneIdentity} from '../../double/accountFixtures.js';
 
-// Pins spec/approved/account.spec.md §3.2 and §4.1.
-
 describe('Account', (): void => {
   it('extends TimestampedEntity and is created enabled with exactly the given identity', (): void => {
     const identity = buildPasswordIdentity();

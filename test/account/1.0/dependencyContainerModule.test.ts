@@ -8,8 +8,6 @@ import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {dependencyContainer} from '@src/dependencyContainer.js';
 import {beforeAll, describe, expect, it} from 'vitest';
 
-// Pins spec/approved/account.spec.md §3.5: the registry binds every provider to its strategy.
-
 beforeAll((): void => {
   process.env.API_NAME = 'api-test';
   process.env.API_PORT = '3000';

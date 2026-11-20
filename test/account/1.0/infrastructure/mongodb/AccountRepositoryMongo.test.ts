@@ -20,8 +20,6 @@ afterAll(async (): Promise<void> => {
   await mongoTestServer.stop();
 });
 
-// dropIndexes clears index definitions left behind by earlier runs (the adapter re-creates the
-// current ones on first use), so an index redesign never collides with a stale test database.
 const buildRepository = async (): Promise<AccountRepository> => {
   const client = await mongoTestServer.getClient();
   const database = client.db('account-contract-test');

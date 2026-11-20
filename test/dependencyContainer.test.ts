@@ -19,9 +19,8 @@ import {RepositoryMongo} from '@core/infrastructure/mongodb/RepositoryMongo.js';
 import {dependencyContainer} from '@src/dependencyContainer.js';
 import {beforeAll, describe, expect, it} from 'vitest';
 
-// The container smoke test: every binding resolves with its full dependency chain. It catches
-// unbound chains and decorator-metadata regressions (esbuild emits no design:paramtypes).
 const REQUIRED_ENVIRONMENT: Record<string, string> = {
+  ACCOUNT_JWT_SECRET: 'smoke-test-secret-of-at-least-32-characters',
   API_NAME: 'api-test',
   API_PORT: '3000',
   LOG_LEVEL: 'error',

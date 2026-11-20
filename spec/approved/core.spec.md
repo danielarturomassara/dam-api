@@ -4,7 +4,7 @@ Authored and edited by Daniel only. Agents: read-only. Implementation conforms t
 
 ## 1. Purpose
 
-`@core` is the cross-project standard library of the API: everything a feature module needs that carries no business meaning. It provides the domain building blocks (value objects, the entity ladder, domain errors, discriminated-union typing), the ports every module talks through (logging, configuration, HTTP serving and routing, database connections), the adapters behind those ports, and the error middleware that turns domain errors into HTTP answers.
+`@core` is the cross-project standard library of the API: everything a feature module needs that carries no business meaning. It provides the domain building blocks (value objects, the entity ladder, domain errors, discriminated-union typing), the ports every module talks through (logging, configuration, HTTP serving and routing, database connections, request throttling), the adapters behind those ports, and the error middleware that turns domain errors into HTTP answers.
 
 ## 2. Scope
 
@@ -24,6 +24,7 @@ Does not define: any feature module, the persistence adapters of feature modules
 - `StrictUnion<UNION>`: every member of the union gains every key of every other member as an optional `never`; discriminant narrowing is preserved.
 - `DateRange` = `{fromDate: Date; toDate: Date}`.
 - `Pagination` = `{limit: number; page: number}`; `PaginationResponse<T>` = `{currentPage, data: Array<T>, hasNextPage, hasPreviousPage, totalItems, totalPages}`.
+- `ThrottleScope` = `` `${string}.${string}` ``: the name of one throttled thing, written `<module>.<name>` (for example `account.login`). A module declares its own scopes as values of this type.
 - `LOG_LEVELS` string enum: `DEBUG = 'debug'`, `ERROR = 'error'`, `INFO = 'info'`, `WARNING = 'warning'`.
 - HTTP status enums, members in ascending numeric order, plus `HTTP_CODES` = the union of all five:
   - `HTTP_INFORMATIONAL_CODES`: CONTINUE 100, SWITCHING_PROTOCOLS 101, PROCESSING 102, EARLY_HINTS 103.
@@ -43,6 +44,7 @@ Does not define: any feature module, the persistence adapters of feature modules
 - `LanguageTag extends TrimmedString`: valid iff `new Intl.Locale(value)` does not throw.
 - `Uuid extends TrimmedString`: `create()` generates a v4; valid iff the `uuid` package validates it.
 - `Names`: `NamesPrimitives` = `{family: string; given: string}`; `fromPrimitives`/`toPrimitives`; holds `given` and `family` as `TrimmedString`; an empty given or family name throws `InvalidArgument({customMessage: '<Names> does not allow empty strings'})`.
+- `ThrottlePolicy`: `ThrottlePolicyPrimitives` = `{maximumRequests: number; windowSeconds: number}`; `fromPrimitives`/`toPrimitives`; a value that is not a positive integer throws `InvalidArgument({customMessage: '<maximumRequests|windowSeconds> must be a positive integer'})`.
 
 Every value object above rejects an invalid value with `InvalidArgument({value, valueObjectName: <class name>})` unless stated otherwise.
 
@@ -81,12 +83,13 @@ Each port is an interface plus a `Symbol.for` token in the same file.
 
 - `Logger` / `LOGGER`: `debug(message, meta?)`, `info(message, meta?)`, `warning(message, meta?)`, `error(error: Error)`.
 - `EnvironmentReader` / `ENVIRONMENT_READER`: `getRequiredString(name)`, `getRequiredNumber(name)`, `getRequiredEnum(name, enumObject)`, `getOptionalString(name): Nullable<string>`, `getOptionalNumber(name, defaultValue)`, `getOptionalBoolean(name, defaultValue)`.
-- `CoreConfig` / `CORE_CONFIG`: `getApiName(): string`, `getApiPort(): number`, `getNodeEnvironment(): string`, `isDebugEnabled(): boolean`, `getLogLevel(): LOG_LEVELS`.
+- `CoreConfig` / `CORE_CONFIG`: `getApiName(): string`, `getApiPort(): number`, `getNodeEnvironment(): string`, `isDebugEnabled(): boolean`, `getLogLevel(): LOG_LEVELS`, `getTrustedProxyCount(): number`.
 - `MongoConfig` / `MONGO_CONFIG`: `getHost(): string`, `getPort(): number`, `getUser(): Nullable<string>`, `getPassword(): Nullable<string>`, `getDatabaseName(): string`.
 - `PostgreSqlConfig` / `POSTGRESQL_CONFIG`: `getHost(): string`, `getPort(): number`, `getUser(): string`, `getPassword(): string`, `getDatabaseName(): string`.
 - `HttpServer` / `HTTP_SERVER`: `start(): Promise<void>`, `stop(): Promise<void>`.
 - `HttpRouter` / `HTTP_ROUTER`: `getBasePath(): string`, `registerRoutes(): Promise<express.Router>`.
 - `DatabaseConnection` / `DATABASE_CONNECTION`: `getDatabase(): Promise<unknown>`, `disconnect(): Promise<void>`.
+- `RequestThrottle` / `REQUEST_THROTTLE`: `consume(scope: ThrottleScope, clientAddress: string, throttlePolicy: ThrottlePolicy): Promise<ThrottleDecision>`, with `ThrottleDecision` = `{isAllowed: boolean; retryAfterSeconds: number}`.
 - `STARTUP_CONFIG_VALIDATION`: a token without interface; every config binding is also bound to it as a service.
 
 ### 3.7 Application helpers (`application/`)
@@ -97,6 +100,7 @@ Each port is an interface plus a `Symbol.for` token in the same file.
 - `formatInitials(names: Names, separator = ''): string` — the upper-cased first character of each space-separated part of the given name, then of the family name, each followed by `separator`; trimmed.
 - `formatEmail(email: string): string` — lower-cased.
 - `formatE164(phone: string): string` — removes `/[\s().-]/g`; a `00` prefix becomes `+`; a `+` prefix is kept; anything else is prefixed with `+`.
+- `normalizeClientAddress(clientAddress: string | undefined): string` — the key a client address is throttled by (§4.8): an IPv4 address as itself; an IPv4 address mapped into IPv6 as the IPv4 address; any other IPv6 address as its `/64` network, written as its first four groups in lower-case hexadecimal without leading zeros followed by `::/64`. A zone identifier is ignored. A value that is `undefined` or is not an IP address throws `ServerError('The client address of the request is not available.')`.
 
 ### 3.8 Configuration (`infrastructure/`)
 
@@ -109,6 +113,7 @@ One adapter per config port in §3.6 — `CoreConfigEnvironment`, `MongoConfigEn
 | | `getNodeEnvironment()` | `NODE_ENV` | `getRequiredString` |
 | | `isDebugEnabled()` | `DEBUG` | `getOptionalBoolean`, default `false` |
 | | `getLogLevel()` | `LOG_LEVEL` | `getRequiredEnum(LOG_LEVELS)` |
+| | `getTrustedProxyCount()` | `API_TRUSTED_PROXY_COUNT` | `getOptionalNumber`, default `1`; a negative value fails with `ServerError('Environment variable API_TRUSTED_PROXY_COUNT must be zero or greater.')` |
 | `MongoConfigEnvironment` | `getHost()` | `MONGODB_HOST` | `getRequiredString` |
 | | `getPort()` | `MONGODB_PORT` | `getRequiredNumber` |
 | | `getUser()` | `MONGODB_USER` | `getOptionalString` |
@@ -144,7 +149,7 @@ Base class for Mongo adapters, constructed with `MongoConnection`. `WithMongoId<
 
 #### 3.9.6 `HttpServerExpress`
 
-Constructor `(CoreConfig, Logger, HttpRouter)` installs, in order: `bodyParser.json({limit: '2mb'})`, `bodyParser.urlencoded({extended: true, limit: '2mb'})`, `helmet()`, `helmet.xssFilter()`, `helmet.noSniff()`, `helmet.hidePoweredBy()`, `helmet.frameguard({action: 'deny'})`, `compression()`, `cors()`. `start()` mounts `await router.registerRoutes()`, then listens on the API port and resolves once listening, logging `${apiName} running on port ${apiPort} (${nodeEnvironment}, debug ${isDebugEnabled}, log level ${logLevel}).`. `stop()` closes the server.
+Constructor `(CoreConfig, Logger, HttpRouter)` sets the Express `trust proxy` setting to `coreConfig.getTrustedProxyCount()` and then installs, in order: `bodyParser.json({limit: '2mb'})`, `bodyParser.urlencoded({extended: true, limit: '2mb'})`, `helmet()`, `helmet.xssFilter()`, `helmet.noSniff()`, `helmet.hidePoweredBy()`, `helmet.frameguard({action: 'deny'})`, `compression()`, `cors()`. `start()` mounts `await router.registerRoutes()`, then `notFoundHandler`, `translateBodyParserError` and `errorHandler(logger)` in that order, then listens on the API port and resolves once listening, logging `${apiName} running on port ${apiPort} (${nodeEnvironment}, debug ${isDebugEnabled}, log level ${logLevel}).`. `stop()` closes the server.
 
 #### 3.9.7 `HttpRouterExpress`
 
@@ -154,11 +159,18 @@ Constructor `(CoreConfig, Logger)`; `getBasePath()` = `'/'`. `registerRoutes()` 
 
 - `baseHandler(appName, moduleName): Handler` — `HTTP_SUCCESS_CODES.OK` with the JSON string `${appName} - ${moduleName} home page`; failures go to `next(error)`.
 - `errorHandler(logger): ErrorRequestHandler` — arity four; logs every error with `logger.error(error)` and answers per §5.
+- `notFoundHandler: RequestHandler` — forwards `NotFound('Route ${method} ${path}')` to `next(error)` for every request that reaches it.
+- `translateBodyParserError: ErrorRequestHandler` — arity four; an error whose `type` is `entity.parse.failed` becomes `InvalidArgument({customMessage: 'Malformed JSON body'})` and one whose `type` is `entity.too.large` becomes `PayloadTooLarge()`; it forwards the translated error, or any other error unchanged, to `next(error)` and never answers itself.
 
 #### 3.9.9 Seeding (`infrastructure/mongodb/migration/`)
 
 - `DataSeeder` (`CoreConfig`, `Logger`, `MongoConnection`): `populate()` returns immediately when the node environment is `'production'`. Otherwise, for each `**/mongodb/seed/*.json` (collection name = file name without `.json`/`.csv`, content = JSON array): an item's `id` becomes `_id` per §4.5, every item goes through `SeedDocumentFormatter.format`, the collection is dropped and the documents inserted, with info logs `Found seed file: ${filename}`, `${filename} contains ${count} documents.`, `Dropping ${collection} collection...`, `Inserting ${count} documents into ${collection} collection...`, `Collection ${collection} seeded successfully.`. Finally the connection is closed.
 - `SeedDocumentFormatter.format(document)` decodes recursively and in place: `null`/`undefined` → `null`; `{$date: <string|number>}` → `Date`; for the fields `created_at`/`updated_at`, `{$numberLong: "<milliseconds>"}` → `Date`; other objects recurse; primitives pass through. An undecodable date throws `InvalidArgument({value, valueObjectName: 'SeedDate'})`.
+
+#### 3.9.10 Request throttling
+
+- `RequestThrottleInMemory implements RequestThrottle` (`infrastructure/RequestThrottleInMemory.ts`) — no constructor dependencies. It holds the counts in the memory of the process and measures time with the monotonic clock. `countOpenWindows(): number` is a diagnostic: how many windows it holds right now.
+- `throttle(requestThrottle: RequestThrottle, scope: ThrottleScope, throttlePolicy: ThrottlePolicy): RequestHandler` (`infrastructure/http/middleware/throttle.ts`) — consumes one request from `requestThrottle` for `scope` and `normalizeClientAddress(request.ip)` under `throttlePolicy`. When the request is allowed it calls `next()`. When it is refused it sets the header `Retry-After` to the decision's `retryAfterSeconds` and forwards `TooManyRequests()` to `next(error)`. Any failure goes to `next(error)`.
 
 ### 3.10 Ports and adapters (`dependencyContainerModule.ts`)
 
@@ -170,6 +182,7 @@ Constructor `(CoreConfig, Logger)`; `getBasePath()` = `'/'`. `registerRoutes()` 
 | `LOGGER` | `LoggerWinston` | singleton |
 | `HTTP_SERVER` | `HttpServerExpress` | transient |
 | `HTTP_ROUTER` | `HttpRouterExpress` | transient |
+| `REQUEST_THROTTLE` | `RequestThrottleInMemory` | singleton |
 | `POSTGRESQL_CONFIG` (also `STARTUP_CONFIG_VALIDATION`) | `PostgreSqlConfigEnvironment` | singleton, bound only while a module consumes the connection |
 | `DATABASE_CONNECTION` | `DatabaseConnectionPostgreSQL` | singleton, bound only while a module consumes it |
 
@@ -221,6 +234,10 @@ Classes bound to themselves: `MongoConnection` (singleton), `RepositoryMongo`, `
 - Module routers shall be mounted before the error middleware; the error middleware shall keep its arity of four.
 - The error middleware shall log every error before answering, shall answer every error itself and shall never call `next`.
 - Client errors shall answer with their message as a JSON string body; mapped server errors shall answer with an empty body; anything unmapped shall answer `500` with the JSON string `"Unknown error"`.
+- A request that no route answers shall answer `404` with the JSON string `"Route <method> <path> not found."`.
+- A body the parser rejects shall be answered by the error middleware, never by the framework's own page: a malformed JSON body with `400` and `"Malformed JSON body"`, a body over the size limit with `413` and `"Payload too large."`.
+- A `401` answer shall carry the header `WWW-Authenticate: Bearer`: HTTP requires a challenge on every `401` (RFC 9110 §15.5.2).
+- The client address of a request shall be the address of the connection. When `API_TRUSTED_PROXY_COUNT` is greater than zero, it shall instead be read from the `X-Forwarded-For` header, trusting that many proxies in front of the server. The default is `1`: the server is expected to run behind exactly one reverse proxy, which shall overwrite or append to the header and shall be the only way to reach the server. With `0` the header shall be ignored, so a caller cannot choose its own address; a server reachable without a proxy shall be configured with `0`.
 
 ### 4.6 Persistence
 
@@ -233,6 +250,18 @@ Classes bound to themselves: `MongoConnection` (singleton), `RepositoryMongo`, `
 
 - All logging shall go through the `Logger` port; `console.*` is allowed only in the composition root's discovery diagnostics.
 - `Logger.error` shall receive an `Error`; the adapter shall record its name, message and stack.
+
+### 4.8 Request throttling
+
+- `@core` provides the mechanism only. A module declares what it throttles: its scopes (values of `ThrottleScope`, each starting with the module's own name) and the policy of each, read from the module's own configuration. `@core` names no scope and reads no throttle variable.
+- Every module shares the one `RequestThrottle` binding. Each scope shall be counted on its own; the module name inside the scope keeps two modules from ever sharing a count.
+- Inside one window, one client address may send at most the policy's `maximumRequests` to one scope.
+- A window shall start with the first counted request of a client address in a scope and shall last the `windowSeconds` of the policy that request carried; the first request after it ends starts a new window.
+- An allowed request shall resolve `{isAllowed: true, retryAfterSeconds: 0}`. A request beyond the maximum shall resolve `{isAllowed: false, retryAfterSeconds}` holding the whole seconds until the window ends, at least `1`, and shall not be counted.
+- Counting shall be atomic: concurrent requests shall never share one count.
+- The client address shall be the one the HTTP server resolves for the request (§4.5), normalized by `normalizeClientAddress`: an IPv6 address is counted by its `/64` prefix, because one network holds every address under it.
+- A request the `throttle` middleware refuses shall answer `429` with the body `"Too many requests."` and the header `Retry-After`. The middleware shall run before the endpoint's handler, so nothing else happens for a refused request. A request the HTTP server rejects before routing it (a malformed JSON body, an oversized body) does not count.
+- `RequestThrottleInMemory` loses its counts on restart and does not share them between processes. It shall never count against a window that has ended and shall discard ended windows, so its memory is bounded by the distinct client addresses seen inside one window of each scope. A deployment that runs more than one process binds another adapter of the port in the wiring.
 
 ## 5. Errors
 
@@ -281,11 +310,11 @@ The HTTP mapping applied by `errorHandler`, matched by `instanceof` in table ord
 | `NetworkAuthenticationRequired` | `511` | empty |
 | `ServerError`, `DatabaseError`, any other `Error` | `500` | `"Unknown error"` |
 
-"message" is `error.message` serialized as a JSON string.
+"message" is `error.message` serialized as a JSON string. Every `401` answer also carries the header `WWW-Authenticate: Bearer` (§4.5). A `429` answer of the `throttle` middleware also carries the header `Retry-After` (§4.8).
 
 ## 6. Non-goals
 
-`@core` does not provide: authentication or session handling, request validation beyond value objects, an ORM or query builder, PostgreSQL/MySQL/Neo4j repository base classes, a scheduler, an event bus, an HTTP client, a mailer, a use-case base class, a global configuration object, or any business concept.
+`@core` does not provide: authentication or session handling, request validation beyond value objects, an ORM or query builder, PostgreSQL/MySQL/Neo4j repository base classes, a scheduler, an event bus, an HTTP client, a mailer, a use-case base class, a global configuration object, throttle scopes or limits (each module declares its own), throttle counts shared between processes, or any business concept.
 
 ## 7. Conformance
 

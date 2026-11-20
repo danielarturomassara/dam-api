@@ -3,8 +3,6 @@ import {ServerError} from '@core/domain/error/ServerError.js';
 import {EnvironmentReaderProcessEnv} from '@core/infrastructure/EnvironmentReaderProcessEnv.js';
 import {afterEach, describe, expect, it} from 'vitest';
 
-// Pins spec/approved/account.spec.md §3.4.
-
 const VARIABLE_NAME_LIST = [
   'ACCOUNT_PASSWORD_MINIMUM_DIGITS',
   'ACCOUNT_PASSWORD_MINIMUM_LOWERCASE',

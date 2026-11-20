@@ -25,6 +25,7 @@ export class HttpServerExpress implements HttpServer {
     @inject(HTTP_ROUTER) private readonly httpRouter: HttpRouter
   ) {
     this.application = express();
+    this.application.set('trust proxy', this.coreConfig.getTrustedProxyCount());
     this.application.use(bodyParser.json({limit: '2mb'}));
     this.application.use(bodyParser.urlencoded({extended: true, limit: '2mb'}));
     this.application.use(helmet());

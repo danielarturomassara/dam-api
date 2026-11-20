@@ -7,8 +7,6 @@ import {AccountConfigFake} from '../../../double/AccountConfigFake.js';
 import {AccountRepositoryInMemory} from '../../../double/AccountRepositoryInMemory.js';
 import {EncrypterFake} from '../../../double/EncrypterFake.js';
 
-// Pins spec/approved/account.spec.md §4.2 (field messages) and §4.3.
-
 const validProviderData = {email: 'someone@example.com', password: 'correct-horse-battery'};
 
 const buildPasswordRegistration = (

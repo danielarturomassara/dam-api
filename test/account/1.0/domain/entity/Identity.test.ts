@@ -2,10 +2,6 @@ import {IdentityPrimitives} from '@account/domain/entity/Identity.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {describe, expect, it} from 'vitest';
 
-// TYPE tests for the identity discriminated union: a variant rejects every other variant's
-// fields at compile time. Validated by `npm run type-check`; each ts-expect-error line fails the
-// type-check if the rejection it pins ever stops happening.
-
 const baseIdentityPrimitives = {
   createdAt: new Date('2026-01-05T10:00:00.000Z'),
   disabledAt: null,

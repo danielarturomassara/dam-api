@@ -26,9 +26,6 @@ class MongoTestConnection extends MongoConnection {
   }
 }
 
-// Connects the suites to a real mongod. TEST_MONGODB_URI (from .env) points at the compose
-// `mongodb` service — the Alpine devcontainer cannot execute mongod binaries; without it a
-// mongodb-memory-server instance is started (glibc environments such as the CI runners).
 export class MongoTestServer {
   private client: Nullable<MongoClient> = null;
   private memoryServer: Nullable<MongoMemoryServer> = null;

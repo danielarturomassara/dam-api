@@ -15,9 +15,6 @@ export default async (request: Request, response: Response, next: NextFunction):
 
     response.status(HTTP_SUCCESS_CODES.ACCEPTED).end();
   } catch (error) {
-    // TODO(spec §3.3/§4.5, issue #2): when the oauth flows land, a DuplicateContact thrown by a
-    // provider that creates VERIFIED identities must answer 409 — this silence needs provider
-    // awareness before any oauth strategy can throw DuplicateContact.
     if (error instanceof DuplicateContact) {
       logger.warning(`Silenced a duplicate registration attempt (${error.message})`);
       response.status(HTTP_SUCCESS_CODES.ACCEPTED).end();

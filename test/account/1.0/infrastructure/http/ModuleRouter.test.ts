@@ -9,13 +9,13 @@ describe('account ModuleRouter', (): void => {
     expect(new ModuleRouter(new CoreConfigFake(), new LoggerSpy()).getBasePath()).toBe('/auth');
   });
 
-  it('registers the home route and POST /register', async (): Promise<void> => {
+  it('registers the home route and the login, login code, register and token refresh endpoints', async (): Promise<void> => {
     const router = await new ModuleRouter(new CoreConfigFake(), new LoggerSpy()).registerRoutes();
     const routeList = router.stack
       .map((layer): object | undefined => layer.route)
       .filter((route) => route !== undefined)
       .map((route) => `${Object.keys(Reflect.get(route, 'methods')).join(',').toUpperCase()} ${Reflect.get(route, 'path')}`);
 
-    expect(routeList).toStrictEqual(['GET /', 'POST /register']);
+    expect(routeList).toStrictEqual(['GET /', 'POST /login', 'POST /login/code', 'POST /register', 'POST /token/refresh']);
   });
 });

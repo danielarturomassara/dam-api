@@ -1,4 +1,5 @@
 import {ProviderPhone} from '@account/application/dto/provider/ProviderPhone.js';
+import {normalizePhone} from '@account/application/normalizePhone.js';
 import {BaseRegistration} from '@account/application/useCase/registration/BaseRegistration.js';
 import {FieldSchemas} from '@account/application/useCase/registration/FieldSchemas.js';
 import {parseWithSchema} from '@account/application/useCase/registration/parseWithSchema.js';
@@ -9,7 +10,6 @@ import {IdentityProviderPhone} from '@account/domain/entity/IdentityProviderPhon
 import {DuplicateContact} from '@account/domain/error/DuplicateContact.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {VerificationCode} from '@account/domain/valueObject/VerificationCode.js';
-import {formatE164} from '@core/application/stringFormatter.js';
 import {Phone} from '@core/domain/valueObject/Phone.js';
 import {inject, injectable} from 'inversify';
 
@@ -41,7 +41,7 @@ export class PhoneRegistration extends BaseRegistration<ProviderPhone> {
 
   protected parseProviderData (rawProviderData: unknown): ProviderPhone {
     const providerData = parseWithSchema(phoneProviderDataSchema, rawProviderData);
-    const phone = this.normalizePhone(providerData.phone);
+    const phone = normalizePhone(providerData.phone);
 
     Phone.fromPrimitives(phone);
 
@@ -52,19 +52,7 @@ export class PhoneRegistration extends BaseRegistration<ProviderPhone> {
     const existingAccount = await this.accountRepository.findByPhone(Phone.fromPrimitives(phoneString));
 
     if (existingAccount) {
-      // TODO(spec §4.4): notify the existing owner ("someone tried to register with your phone
-      // number") through VerificationMessageSender once the communication context provides its adapter.
       throw new DuplicateContact('phone');
     }
-  }
-
-  private normalizePhone (phone: string): string {
-    const trimmedPhone = phone.trim();
-
-    if (trimmedPhone.startsWith('+') || trimmedPhone.startsWith('00')) {
-      return formatE164(trimmedPhone);
-    }
-
-    return trimmedPhone;
   }
 }

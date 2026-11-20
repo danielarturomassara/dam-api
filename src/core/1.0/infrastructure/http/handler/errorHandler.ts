@@ -99,6 +99,10 @@ export const errorHandler = (logger: Logger): ErrorRequestHandler => {
     const clientErrorMapping = CLIENT_ERROR_MAPPING_LIST.find((mapping) => error instanceof mapping.errorClass);
 
     if (clientErrorMapping) {
+      if (clientErrorMapping.statusCode === HTTP_CLIENT_ERROR_CODES.UNAUTHORIZED) {
+        response.setHeader('WWW-Authenticate', 'Bearer');
+      }
+
       response.status(clientErrorMapping.statusCode).json(error.message);
 
       return;

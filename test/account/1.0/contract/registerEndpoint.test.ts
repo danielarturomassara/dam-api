@@ -13,10 +13,6 @@ import {LoggerSpy} from '../../../core/1.0/double/LoggerSpy.js';
 import {AccountRepositoryInMemory} from '../double/AccountRepositoryInMemory.js';
 import {EncrypterFake} from '../double/EncrypterFake.js';
 
-// HTTP contract of spec/approved/account.spec.md §3.3: one case per response-table row, driven through the
-// real Express stack (HttpServerExpress middleware chain + the account ModuleRouter + the @core
-// error middleware) with the persistence and encryption adapters replaced by doubles.
-
 const TEST_PORT = 43118;
 
 const BASE_URL = `http://127.0.0.1:${TEST_PORT}/auth/register`;

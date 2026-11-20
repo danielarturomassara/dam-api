@@ -14,11 +14,6 @@ import {ResponseRecorder} from '../../../../../core/1.0/double/ResponseRecorder.
 import {AccountRepositoryInMemory} from '../../../double/AccountRepositoryInMemory.js';
 import {EncrypterFake} from '../../../double/EncrypterFake.js';
 
-// Pins spec/approved/account.spec.md §3.3 response table and §5: the handler answers 202 on success, silences
-// only DuplicateContact into a 202, and forwards every other error to the error middleware.
-
-// The strategies are singletons that capture the repository once, so one in-memory repository and
-// one logger serve the whole file and are emptied between tests.
 const accountRepository = new AccountRepositoryInMemory();
 const logger = new LoggerSpy();
 

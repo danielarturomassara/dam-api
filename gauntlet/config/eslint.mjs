@@ -13,6 +13,34 @@ import sonarjs from 'eslint-plugin-sonarjs';
 import unusedImports from 'eslint-plugin-unused-imports';
 
 const SOURCE_FILES = ['src/**/*.{ts,tsx}', 'test/**/*.{ts,tsx}'];
+const TYPE_CHECK_DIRECTIVE_COMMENT = /^\s*@ts-expect-error(\s|$)/u;
+const LINT_DIRECTIVE_COMMENT = /^\s*eslint-(disable|enable)(-next-line|-line)?(\s+[\w@/,\s-]+)?\s*$/u;
+const LINT_DIRECTIVE_DESCRIPTION = /\s--\s/u;
+
+const isToolDirective = (commentText) => {
+  return TYPE_CHECK_DIRECTIVE_COMMENT.test(commentText) || (LINT_DIRECTIVE_COMMENT.test(commentText) && !LINT_DIRECTIVE_DESCRIPTION.test(commentText));
+};
+
+const noCommentsRule = {
+  create: (context) => {
+    return {
+      Program: () => {
+        for (const comment of context.sourceCode.getAllComments()) {
+          if (comment.type !== 'Shebang' && !isToolDirective(comment.value)) {
+            context.report({loc: comment.loc, messageId: 'commentFound'});
+          }
+        }
+      }
+    };
+  },
+  meta: {
+    messages: {
+      commentFound: 'Comments are forbidden. Say it with names, types and tests; only eslint-disable (without a description) and @ts-expect-error directives are allowed.'
+    },
+    schema: [],
+    type: 'problem'
+  }
+};
 
 export const gauntletEslintConfig = ({rootDirectory}) => {
   if (typeof rootDirectory !== 'string' || rootDirectory.length === 0) {
@@ -277,6 +305,15 @@ export const gauntletEslintConfig = ({rootDirectory}) => {
       },
       rules: {
         '@typescript-eslint/no-floating-promises': 'error'
+      }
+    },
+    {
+      files: SOURCE_FILES,
+      plugins: {
+        gauntlet: {rules: {'no-comments': noCommentsRule}}
+      },
+      rules: {
+        'gauntlet/no-comments': 'error'
       }
     }
   ];

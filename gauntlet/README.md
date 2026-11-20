@@ -106,6 +106,7 @@ The stack lives in `gauntlet.json`, a committed and protected file, never in the
 - `npm run baseline:crap` — regenerate `baseline/crap.json` from the current CRAP report.
 - `npm run baseline:depcruise` — regenerate `baseline/depcruise.json`.
 - `GAUNTLET_ALLOW_PROTECTED_EDITS=1` in the shell before launching Claude Code — bulk escape hatch for the hooks; relaunch without it afterwards. It cannot be flipped from inside a session.
+- Batch grant, without relaunching — the agent writes `.claude/grant/protectedEdits.json` (paths, a reason, an expiry at most 60 minutes ahead) and the owner approves that single Write, whose prompt shows the whole grant. Until it expires, Edit/Write on the listed paths pass without a prompt. The kit, `gauntlet.json`, `.claude/`, `CLAUDE.md` and the workflows are never grantable (`gauntlet/protectedEditGrant.mjs`). Add `.claude/grant/` to `.gitignore`.
 
 ## Enforcement, weakest to strongest
 

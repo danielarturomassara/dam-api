@@ -3,9 +3,6 @@ import {Container} from 'inversify';
 import {fileURLToPath} from 'url';
 import {beforeAll, describe, expect, it, vi} from 'vitest';
 
-// Pins module discovery in dependencyContainer.ts (core spec §3.11): every
-// `<module>/<version>/dependencyContainerModule.ts` next to the composition root is loaded into the
-// container exactly once, and nothing else is.
 const sourceDirectory = fileURLToPath(new URL('../src/', import.meta.url));
 const moduleFileList = glob.sync('*/*/dependencyContainerModule.ts', {cwd: sourceDirectory}).sort();
 const loadSpy = vi.spyOn(Container.prototype, 'load');

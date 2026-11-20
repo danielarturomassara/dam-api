@@ -6,8 +6,6 @@ import {MongoConfigEnvironment} from '@core/infrastructure/MongoConfigEnvironmen
 import {PostgreSqlConfigEnvironment} from '@core/infrastructure/PostgreSqlConfigEnvironment.js';
 import {afterEach, describe, expect, it} from 'vitest';
 
-// Pins spec/approved/core.spec.md §3.8: every variable each config adapter reads, its reader and default.
-
 const reader = new EnvironmentReaderProcessEnv();
 
 const VARIABLE_NAME_LIST = [

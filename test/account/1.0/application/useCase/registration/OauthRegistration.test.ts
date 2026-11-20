@@ -6,9 +6,6 @@ import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {NotImplemented} from '@core/domain/error/NotImplemented.js';
 import {describe, expect, it} from 'vitest';
 
-// Pins spec/approved/account.spec.md §4.5: the oauth flows answer NotImplemented, but only AFTER the
-// providerData shape has passed the §4.2 validation.
-
 const validAppleData = {code: 'c', id_token: 't', state: 's', user: {email: 'Someone@Example.com', name: {firstName: 'Ada', lastName: 'Lovelace'}}};
 
 const validGoogleData = {access_token: 'a', expires_in: 3600, id_token: 't', scope: 'openid', token_type: 'Bearer'};

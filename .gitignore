@@ -7,3 +7,4 @@ report/
 .stryker-tmp/
 docker/.env
 .claude/settings.local.json
+.claude/grant/

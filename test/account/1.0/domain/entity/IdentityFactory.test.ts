@@ -9,8 +9,6 @@ import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {describe, expect, it} from 'vitest';
 
-// Pins spec/approved/account.spec.md §3.2: hydration restores the concrete variant for its provider.
-
 const baseIdentityPrimitives = {
   createdAt: new Date('2026-01-05T10:00:00.000Z'),
   disabledAt: null,

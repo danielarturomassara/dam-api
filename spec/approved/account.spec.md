@@ -6,17 +6,19 @@ Authored and edited by Daniel only. Agents: read-only. Implementation conforms t
 
 The account module owns who a user is. An **Account** is the user: enabled or disabled, with a primary email and/or a primary phone. An **Identity** is one way that account proves itself — email and password, a phone number, or an external provider (Apple, Google, Meta). Each identity can be verified or unverified. An account holds at least one identity.
 
-Login is how an account proves one of its identities and receives tokens. A caller presents the credential of one identity provider; when the credential is proven and the identity may log in, the module answers with a short-lived access token and a longer-lived refresh token. Both are signed tokens the server never stores: there is no session and no server-side token state.
+Login is how an account proves one of its identities and receives tokens. A caller presents the credential of one identity provider; when the credential is proven and the identity may log in, the module answers with a short-lived access token and a longer-lived refresh token. Both are signed tokens the server never stores: there is no session, and the only token state the server keeps is the record of what it revoked (§4.20).
+
+An access token authenticates the caller of a protected endpoint, of this module or of any other, until it expires or is revoked. Logout is how a login ends before its tokens expire: the caller revokes the tokens of one login, or every token of the account.
 
 Verification is how an identity proves that its owner controls the contact behind it. Each identity declares how it becomes verified: when it is created, through a verification link, or by the first login credential it proves.
 
-This version of the specification covers the module shape, the domain model, registration, identity verification, login and tokens, and the request throttling of the module's endpoints. A reference written "core §x" points to `core.spec.md`.
+This version of the specification covers the module shape, the domain model, registration, identity verification, login and tokens, the authentication of protected requests, logout and token revocation, and the request throttling of the module's endpoints. A reference written "core §x" points to `core.spec.md`.
 
 ## 2. Scope
 
-Defines: the account module structure (split between self and user submodules inside each hexagonal layer when needed), the domain shapes (entities, identity variants, value objects), the module configuration, the register, verify, login, login code and token refresh endpoint contracts, the payload each provider sends, the account and identity created per provider, how identities become verified, the tokens and their claims, the login challenge behind one-time codes, the ports and adapters, the persistence guarantees, which of the module's endpoints are throttled and with what limits, and the error responses.
+Defines: the account module structure (split between self and user submodules inside each hexagonal layer when needed), the domain shapes (entities, identity variants, value objects), the module configuration, the register, verify, login, login code, token refresh and logout endpoint contracts, the payload each provider sends, the account and identity created per provider, how identities become verified, the tokens and their claims, the login challenge behind one-time codes, when an access token authenticates a protected request, how tokens are revoked and how long a revocation is kept, the ports and adapters, the persistence guarantees, which of the module's endpoints are throttled and with what limits, and the error responses.
 
-Does not define: how each handler works internally, how database connections are managed, how request throttling works (core §4.8), the delivery of messages (the communication context), the verification of an access token on protected routes, multi-factor authentication, linking a second identity to an existing account, password reset, one-time login links, changing a primary email or phone, or administration of accounts (see §6).
+Does not define: how each handler works internally, how database connections are managed, how request throttling works (core §4.8), how the `Authorization` header of a protected request is read (core §4.9), what an authenticated caller is allowed to do on another module's endpoint (each module decides for its own), the delivery of messages (the communication context), multi-factor authentication, linking a second identity to an existing account, password reset, one-time login links, changing a primary email or phone, or administration of accounts (see §6).
 
 ## 3. Contract
 
@@ -92,7 +94,7 @@ Responses:
 
 Unknown body fields, at any depth, are ignored. Field names inside `providerData` are the provider's own (snake_case for Google, camelCase for Meta) and are not translated.
 
-Machine-readable form of §3.3, §3.6–§3.8 and §3.10: `spec/approved/account.openapi.yaml` (OpenAPI 3.1). The tables in those sections are the contract; the OpenAPI document mirrors them and, when they disagree, the prose wins.
+Machine-readable form of §3.3, §3.6–§3.8 and §3.10–§3.12: `spec/approved/account.openapi.yaml` (OpenAPI 3.1). The tables in those sections are the contract; the OpenAPI document mirrors them and, when they disagree, the prose wins.
 
 ### 3.4 Configuration
 
@@ -124,7 +126,10 @@ Every variable is optional with the documented default, except the one marked re
 | `RegistrationStrategyRegistry` / `REGISTRATION_STRATEGY_REGISTRY` | `Record<IDENTITY_PROVIDERS, RegistrationStrategy>`; a strategy is `register(rawProviderData: unknown): Promise<Account>` | `AppleRegistration`, `GoogleRegistration`, `MetaRegistration`, `PasswordRegistration`, `PhoneRegistration`, assembled in the wiring | singleton |
 | `VerificationMessageSender` | sends the verification and duplicate-attempt messages of §4.3 and §4.4 | the communication context's in-process adapter (context map §2) | singleton |
 | `TokenIssuer` / `TOKEN_ISSUER` | `issueAccessToken(accountId: Uuid)`, `issueRefreshToken(accountId: Uuid, provider: IDENTITY_PROVIDERS)`; both resolve an `IssuedToken` = `{expiresInSeconds: number; token: string}` | `TokenIssuerJsonWebToken` | singleton |
-| `RefreshTokenVerifier` / `REFRESH_TOKEN_VERIFIER` | `verify(token: string)` resolves `RefreshTokenClaims` = `{accountId: Uuid; provider: IDENTITY_PROVIDERS}` or throws `Unauthorized('Invalid refresh token')` | `RefreshTokenVerifierJsonWebToken` | singleton |
+| `RefreshTokenVerifier` / `REFRESH_TOKEN_VERIFIER` | `verify(token: string)` resolves `RefreshTokenClaims` = `{accountId: Uuid; expiresAt: Date; issuedAt: Date; provider: IDENTITY_PROVIDERS; tokenId: Uuid}` or throws `Unauthorized('Invalid refresh token')` | `RefreshTokenVerifierJsonWebToken` | singleton |
+| `AccessTokenVerifier` / `ACCESS_TOKEN_VERIFIER` | `verify(token: string)` resolves `AccessTokenClaims` = `{accountId: Uuid; expiresAt: Date; issuedAt: Date; tokenId: Uuid}` or throws `Unauthorized('Invalid access token')` | `AccessTokenVerifierJsonWebToken` | singleton |
+| `TokenRevocationRepository` / `TOKEN_REVOCATION_REPOSITORY` | `revokeToken(tokenId: Uuid, expiresAt: Date)`, `revokeTokensOfAccount(accountId: Uuid, issuedUntil: Date, expiresAt: Date)`, `isRevoked(revocableToken: RevocableToken)`, with `RevocableToken` = `{accountId: Uuid; issuedAt: Date; tokenId: Uuid}`; the writes return `void`, the lookup returns `boolean` (§4.20) | `TokenRevocationRepositoryMongo` | singleton |
+| `AccessTokenAuthenticator` / `ACCESS_TOKEN_AUTHENTICATOR` (a port of `@core`, core §3.6) | `authenticate(accessToken: string)` resolves the core `Authentication`, with the account id as its `subjectId`, by running `AuthenticateAccessToken` | `AccessTokenAuthenticatorInProcess` | singleton |
 | `TokenSigningConfig` / `TOKEN_SIGNING_CONFIG` (also `STARTUP_CONFIG_VALIDATION`) | `getSigningSecret(): string` | `TokenSigningConfigEnvironment` | singleton |
 | `LoginChallengeRepository` / `LOGIN_CHALLENGE_REPOSITORY` | `create(loginChallenge)`, `findLatestByAccount(accountId: Uuid, provider: IDENTITY_PROVIDERS)`, `claimAttempt(id: Uuid, maximumAttempts: number)`, `consume(id: Uuid)`; the lookup returns `Nullable<LoginChallenge>`, the writes return `void`; `create`, `claimAttempt` and `consume` throw `Conflict` when they take no effect (§4.15) | `LoginChallengeRepositoryMongo` | singleton |
 | `LoginCodeSender` / `LOGIN_CODE_SENDER` | `sendPhoneLoginCode(phone: Phone, code: VerificationCode): Promise<void>` | the communication context's in-process adapter (context map §2) | singleton |
@@ -139,8 +144,13 @@ The use cases behind the endpoints are bound to themselves:
 - `Login.run(input: unknown)` parses the envelope, selects the strategy for `provider`, applies §4.9 to what the strategy proved, persisting the account when the proof verified its identity, and issues the two tokens.
 - `RequestLoginCode.run(input: unknown)` parses the envelope and selects the code request strategy for `provider`.
 - `RefreshAccessToken.run(input: unknown)` applies §4.14.
+- `AuthenticateAccessToken.run(accessToken: string)` applies §4.18 and resolves the `AccessTokenClaims` of the token.
+- `Logout.run(authentication: Authentication, input: unknown)` applies §4.19 to the tokens of one login.
+- `LogoutEverywhere.run(authentication: Authentication)` applies §4.19 to every token of the account.
 
 The module declares no throttle port of its own: it consumes the `RequestThrottle` port and the `throttle` middleware of `@core` (core §3.6, §3.9.10).
+
+The module declares no authentication middleware of its own either. It binds the `AccessTokenAuthenticator` port of `@core`, so that core's `authenticate` middleware (core §3.9.11) authenticates the protected endpoints of every module with this module's access tokens, and it protects its own endpoints with that same middleware. `Authentication` is the core type of core §3.6.
 
 ### 3.6 Login endpoint
 
@@ -191,9 +201,9 @@ Responses:
 
 | status | body | when |
 | --- | --- | --- |
-| `200 OK` | `{"accessToken": string, "expiresIn": number, "tokenType": "Bearer"}` | the refresh token is valid and its identity may log in (§4.14) |
+| `200 OK` | `{"accessToken": string, "expiresIn": number, "tokenType": "Bearer"}` | the refresh token is valid, is not revoked, and its identity may log in (§4.14) |
 | `400 Bad Request` | JSON string with the reason | the body is malformed, or `refreshToken` is missing (`"refreshToken is required"`) or not a string (`"refreshToken must be a string"`) |
-| `401 Unauthorized` | `"Unauthorized. Reason: Invalid refresh token."` | the refresh token is not valid, or its account or identity no longer exists (§4.14) |
+| `401 Unauthorized` | `"Unauthorized. Reason: Invalid refresh token."` | the refresh token is not valid, is revoked, or its account or identity no longer exists (§4.14) |
 | `403 Forbidden` | `"Login not allowed. Reason: <reason>."` | the refresh token is valid and the account or the identity may not log in (§4.9) |
 | `500 Internal Server Error` | `"Unknown error"` | anything the module did not anticipate |
 
@@ -232,6 +242,32 @@ Responses:
 | `500 Internal Server Error` | `"Unknown error"` | anything the module did not anticipate |
 
 Unknown body fields, at any depth, are ignored.
+
+### 3.11 Logout endpoint
+
+`POST /auth/logout` — protected: header `Authorization: Bearer <accessToken>` (§4.18). JSON body `{"refreshToken": string}`. It ends one login: it revokes the access token of the header and the refresh token of the body.
+
+| status | body | when |
+| --- | --- | --- |
+| `204 No Content` | empty | both tokens are revoked (§4.19) |
+| `400 Bad Request` | JSON string with the reason | the body is malformed, or `refreshToken` is missing (`"refreshToken is required"`) or not a string (`"refreshToken must be a string"`) |
+| `401 Unauthorized` | `"Unauthorized. Reason: Missing access token."` | the request carries no bearer token (core §4.9) |
+| `401 Unauthorized` | `"Unauthorized. Reason: Invalid access token."` | the access token is not valid or is revoked (§4.18) |
+| `401 Unauthorized` | `"Unauthorized. Reason: Invalid refresh token."` | the refresh token is not valid, or is not a token of the account the access token authenticates (§4.19) |
+| `500 Internal Server Error` | `"Unknown error"` | anything the module did not anticipate |
+
+Unknown body fields are ignored.
+
+### 3.12 Logout everywhere endpoint
+
+`POST /auth/logout/all` — protected: header `Authorization: Bearer <accessToken>` (§4.18). It takes no body, and ignores one. It ends every login of the account: it revokes every token issued to the account up to that moment, the access token of the header included.
+
+| status | body | when |
+| --- | --- | --- |
+| `204 No Content` | empty | every token of the account is revoked (§4.19) |
+| `401 Unauthorized` | `"Unauthorized. Reason: Missing access token."` | the request carries no bearer token (core §4.9) |
+| `401 Unauthorized` | `"Unauthorized. Reason: Invalid access token."` | the access token is not valid or is revoked (§4.18) |
+| `500 Internal Server Error` | `"Unknown error"` | anything the module did not anticipate |
 
 ## 4. Behavior
 
@@ -307,7 +343,7 @@ Unknown body fields, at any depth, are ignored.
 - Every request that reaches a throttled endpoint shall count, whatever its outcome, and the throttle shall be evaluated before the body is validated.
 - A request beyond the maximum shall answer `429` with the body `"Too many requests."` and the header `Retry-After`. The module shall do nothing else for that request: no validation, no lookup, no hash, no message.
 - The throttle answer shall never depend on whether an account exists.
-- `POST /auth/token/refresh` is not throttled: only a token the module signed passes, so there is nothing to guess.
+- `POST /auth/token/refresh`, `POST /auth/logout` and `POST /auth/logout/all` are not throttled: only a token the module signed passes, so there is nothing to guess.
 
 ### 4.8 Login requests, all providers
 
@@ -368,8 +404,9 @@ Unknown body fields, at any depth, are ignored.
 
 ### 4.14 Token refresh
 
-- A refresh token is valid when its signature verifies with the signing secret under `HS256` and no other algorithm, it is not expired, its `iss` is the API name, its `token_use` is `refresh`, its `sub` is a UUID, and its `provider` is an identity provider.
+- A refresh token is valid when its signature verifies with the signing secret under `HS256` and no other algorithm, it is not expired, its `iss` is the API name, its `token_use` is `refresh`, its `sub` is a UUID, its `jti` is a UUID, and its `provider` is an identity provider.
 - A token that is not valid shall throw `Unauthorized('Invalid refresh token')` — one message for every cause, an access token presented as a refresh token included.
+- A valid refresh token that is revoked (§4.20) shall throw the same `Unauthorized('Invalid refresh token')`. The module shall check it before loading the account.
 - The module shall then load the account named by `sub` and its identity of the token's `provider`; when either does not exist it shall throw the same `Unauthorized('Invalid refresh token')`.
 - The module shall then apply §4.9 to that account and identity. Disabling an account or an identity therefore ends its access within one access token lifetime.
 - The module shall then issue a new access token, and shall never issue a new refresh token: a login lasts at most one refresh token lifetime, after which the caller logs in again.
@@ -409,6 +446,49 @@ Unknown body fields, at any depth, are ignored.
 - Verification shall not depend on whether the account or the identity is disabled: it proves the contact, and §4.9 still decides who logs in.
 - Verification is not a login: the module shall never issue a token for it (§6, one-time login links).
 
+### 4.18 Authenticating a protected request
+
+- An endpoint is protected when the `authenticate` middleware of `@core` runs before its handler (core §4.9). The middleware reads the bearer token; this module decides whether that token authenticates an account, through the `AccessTokenAuthenticator` port it binds (§3.5).
+- An access token is valid when its signature verifies with the signing secret under `HS256` and no other algorithm, it is not expired, its `iss` is the API name, its `token_use` is `access`, its `sub` is a UUID, and its `jti` is a UUID.
+- A token that is not valid shall throw `Unauthorized('Invalid access token')` — one message for every cause, a refresh token presented as an access token included.
+- A valid access token that is revoked (§4.20) shall throw the same `Unauthorized('Invalid access token')`.
+- The module shall check the revocation of every access token on every protected request, so a revocation takes effect on the next request and never waits for the token to expire.
+- A token that authenticates resolves the core `Authentication` of core §3.6: `subjectId` is the account id (`sub`), `tokenId` is the `jti`, `issuedAt` is the `iat` and `expiresAt` is the `exp`.
+- Authenticating a request shall not load the account: an access token is the proof that the account could log in when the token was issued or last refreshed. Disabling an account or an identity ends its access within one access token lifetime (§4.14), not at once.
+- Authenticating a request shall never verify an identity, issue a token or write anything.
+- The module's protected endpoints are `POST /auth/logout` and `POST /auth/logout/all`. Every other endpoint of the module is public.
+
+### 4.19 Logout
+
+- Both logout endpoints shall authenticate the request (§4.18) before anything else: before the body is validated and before any token is revoked.
+- `POST /auth/logout` shall require `refreshToken` in the body, with the messages of §3.8 (`"refreshToken is required"`, `"refreshToken must be a string"`).
+- The refresh token of a logout shall be valid in the sense of §4.14, and its `sub` shall be the account the access token authenticates. Otherwise the module shall throw `Unauthorized('Invalid refresh token')` and shall revoke nothing: a caller can end only its own login.
+- The module shall not refuse a refresh token because it is already revoked: logging out twice with the same refresh token and a still valid access token answers `204` both times.
+- The module shall then revoke the refresh token and then the access token of the request, each until its own `exp` (§4.20), and answer `204` with an empty body.
+- Logout shall not load the account and shall not apply §4.9: a disabled account can still log out.
+- Logout revokes the two tokens it is given, and no other. Another access token obtained earlier from the same refresh token stays usable until it expires, at most one access token lifetime later; the refresh token being revoked, it cannot be replaced. `POST /auth/logout/all` leaves no such token.
+- `POST /auth/logout/all` shall revoke every token of the authenticated account whose `iat` is at or before the instant of the request, access and refresh tokens alike and the access token of the request included, and answer `204` with an empty body. It shall record that instant as the account's revocation cutoff (§4.20), kept for one refresh token lifetime (§3.4): the longest any token issued before it can still live.
+- A token issued after the cutoff is not revoked by it: logging in again after `POST /auth/logout/all` works. `iat` counts whole seconds, so a token issued in the same second as the cutoff is revoked with the rest; the module shall err on that side.
+- When a revocation cannot be stored, the error shall surface (`500`) and the caller repeats the request: revoking a token twice is not an error.
+
+### 4.20 Token revocation
+
+- A token is revoked when its `jti` was revoked through `revokeToken`, or when its account has a revocation cutoff and the token's `iat` is at or before it. `isRevoked` shall answer both in one call.
+- `revokeToken` shall be idempotent: revoking a token that is already revoked shall take no effect and shall not throw.
+- `revokeTokensOfAccount` shall keep one cutoff per account and shall only ever move it forward, atomically in the storage engine itself: of two concurrent calls the later instant shall stay, and a cutoff shall never be replaced by an earlier one — a find-then-update alone is not conformant.
+- A revocation shall hold from the moment its write is acknowledged, and until the token it revokes has expired. It need not be kept longer: an expired token is refused for being expired.
+- The module shall store no token and no part of one beyond its `jti`: a revocation record identifies a token and cannot be used to forge or replay it.
+- Revocation shall fail closed. When `isRevoked` cannot answer, the error shall surface (`500`): a request shall never authenticate, and a refresh token shall never be exchanged, because the revocations could not be read.
+- A token cannot be un-revoked: there is no operation that removes a revocation before it expires.
+
+### 4.21 Persistence of token revocations
+
+- Revoked tokens shall live in their own collection, `accountRevokedTokens`: one document per token, whose `_id` is the BSON UUID (core §4.6) of the token's `jti`, with the `expiresAt` of the revocation.
+- Revocation cutoffs shall live in their own collection, `accountTokenCutoffs`: one document per account, whose `_id` is the BSON UUID of the account id, with the cutoff instant `issuedUntil` and the `expiresAt` of the revocation.
+- The storage engine shall delete a document of either collection once it has expired, through an expiry index on `expiresAt`. The index definition shall be constant and shall never depend on a configuration value, so changing a lifetime never requires rebuilding an index.
+- `isRevoked` shall be served by the `_id` index of each collection, and by nothing else.
+- Logout and the authentication of a request shall never write to the `accounts` collection.
+
 ## 5. Errors
 
 | condition | domain error | HTTP |
@@ -418,18 +498,20 @@ Unknown body fields, at any depth, are ignored.
 | primary email or phone already registered (password/phone) | `DuplicateContact('email')` / `DuplicateContact('phone')` | always `202`, silenced by the HTTP layer |
 | primary email or phone already registered (oauth) | `DuplicateContact('email')` / `DuplicateContact('phone')` | `409` |
 | the credential is not proven | `Unauthorized('Invalid credentials')` | `401` |
-| the refresh token is not valid, or its account or identity no longer exists | `Unauthorized('Invalid refresh token')` | `401` |
+| the refresh token is not valid, is revoked, or its account or identity no longer exists; at logout, the refresh token is not valid or belongs to another account | `Unauthorized('Invalid refresh token')` | `401` |
+| a protected request carries no bearer token (core §4.9) | `Unauthorized('Missing access token')` | `401` |
+| the access token of a protected request is not valid or is revoked | `Unauthorized('Invalid access token')` | `401` |
 | the credential or the refresh token is proven, and the account or the identity may not log in | `LoginNotAllowed(<reason>)` | `403` |
 | a login code request for an unknown phone, for an identity that may not be sent a code, or inside the resend interval | `NotFound('Account')`, `LoginNotAllowed(<reason>)`, `TooManyRequests` | always `202`, silenced by the HTTP layer |
 | the client address exceeded the throttle (§4.7) | `TooManyRequests` | `429` with `Retry-After` |
 | provider or delivery whose flow is not implemented | `NotImplemented` | `501`, empty body |
-| unexpected failure (database, provider unreachable, delivery failure) | `ServerError` | `500` |
+| unexpected failure (database, provider unreachable, delivery failure, a revocation that cannot be read or stored) | `ServerError` | `500` |
 
-`DuplicateContact` extends `Conflict` and is the **only** error the register HTTP layer silences: any other `Conflict` still answers `409`. `LoginNotAllowed`, `NotFound` and `TooManyRequests` are the **only** errors the login code HTTP layer silences, and only when the use case throws them. The verify HTTP layer silences nothing. Every `401` answer carries the header `WWW-Authenticate: Bearer` (core §4.5). The `@core` HTTP error handler maps `NotImplemented` to `501` with an empty body.
+`DuplicateContact` extends `Conflict` and is the **only** error the register HTTP layer silences: any other `Conflict` still answers `409`. `LoginNotAllowed`, `NotFound` and `TooManyRequests` are the **only** errors the login code HTTP layer silences, and only when the use case throws them. The verify and logout HTTP layers silence nothing. Every `401` answer carries the header `WWW-Authenticate: Bearer` (core §4.5). The `@core` HTTP error handler maps `NotImplemented` to `501` with an empty body.
 
 ## 6. Non-goals
 
-This version does not require: sessions or any server-side token state; logout; revoking a single token before it expires; renewing or rotating a refresh token; verifying an access token on protected routes (the `Authorization` middleware); asymmetric signing keys or key rotation; issuing tokens on registration or on verification; multi-factor authentication; linking a second identity to an existing account, at registration or at login (a second provider for the same email is a `202` or `409`, not a link); the provider token verification of §4.5; password reset or change; one-time login links; one-time codes by email; sending a verification email again, or a new one once the 24 hours of §4.17 have passed; removing the accounts whose identity was never verified; changing or removing a primary email or phone; disabling or deleting accounts through the API; throttling beyond the per-address throttle of §4.7 (counts shared between processes, and per-account lockout, which would let anyone lock an owner out); administrative listing of accounts.
+This version does not require: sessions, a list of the logins of an account, or ending one login the caller holds no token of (`POST /auth/logout/all` ends them all); revoking the access tokens obtained from a refresh token when that refresh token is revoked (§4.19); revoking tokens when an account or an identity is disabled (§4.14 ends that access within one access token lifetime); removing a revocation; renewing or rotating a refresh token; authorization by role, scope or permission (the middleware authenticates, each module decides what its caller may do); protecting an endpoint of this module beyond the two logout endpoints; asymmetric signing keys or key rotation; issuing tokens on registration or on verification; multi-factor authentication; linking a second identity to an existing account, at registration or at login (a second provider for the same email is a `202` or `409`, not a link); the provider token verification of §4.5; password reset or change; one-time login links; one-time codes by email; sending a verification email again, or a new one once the 24 hours of §4.17 have passed; removing the accounts whose identity was never verified; changing or removing a primary email or phone; disabling or deleting accounts through the API; throttling beyond the per-address throttle of §4.7 (counts shared between processes, and per-account lockout, which would let anyone lock an owner out); administrative listing of accounts.
 
 ## 7. Conformance
 

@@ -10,6 +10,7 @@ import {LoginChallengeRepositoryInMemory} from '../../double/LoginChallengeRepos
 import {buildLoginChallenge, buildPasswordLoginAccount, buildPhoneLoginAccount, LOGIN_CODE, LOGIN_PASSWORD, LoginAccountState} from '../../double/loginFixtures.js';
 import {RefreshTokenVerifierFake} from '../../double/RefreshTokenVerifierFake.js';
 import {TokenIssuerFake} from '../../double/TokenIssuerFake.js';
+import {TokenRevocationRepositoryInMemory} from '../../double/TokenRevocationRepositoryInMemory.js';
 import {AccountRepositoryRecording} from '../../double/verificationFixtures.js';
 
 const PHONE = '+34600111222';
@@ -105,7 +106,7 @@ describe('Login verifying an identity by its first proven credential', (): void 
 describe('RefreshAccessToken and verification', (): void => {
   it('never verifies an identity: a refresh token is not a login credential', async (): Promise<void> => {
     const account = buildPhoneLoginAccount(PHONE, {isIdentityVerified: false});
-    const refreshAccessToken = new RefreshAccessToken(new RefreshTokenVerifierFake(), accountRepository, tokenIssuer);
+    const refreshAccessToken = new RefreshAccessToken(new RefreshTokenVerifierFake(), accountRepository, tokenIssuer, new TokenRevocationRepositoryInMemory());
 
     await accountRepository.create(account);
 

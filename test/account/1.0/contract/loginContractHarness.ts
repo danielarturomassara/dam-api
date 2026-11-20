@@ -1,6 +1,7 @@
 import {ACCOUNT_REPOSITORY} from '@account/domain/AccountRepository.js';
 import {ENCRYPTER} from '@account/domain/Encrypter.js';
 import {LOGIN_CHALLENGE_REPOSITORY} from '@account/domain/LoginChallengeRepository.js';
+import {TOKEN_REVOCATION_REPOSITORY} from '@account/domain/TokenRevocationRepository.js';
 import {TOKEN_SIGNING_CONFIG} from '@account/domain/TokenSigningConfig.js';
 import {ModuleRouter} from '@account/infrastructure/http/ModuleRouter.js';
 import {CORE_CONFIG} from '@core/domain/CoreConfig.js';
@@ -17,6 +18,7 @@ import {RequestThrottleScripted} from '../../../core/1.0/double/RequestThrottleS
 import {AccountRepositoryInMemory} from '../double/AccountRepositoryInMemory.js';
 import {EncrypterCounting} from '../double/EncrypterCounting.js';
 import {LoginChallengeRepositoryInMemory} from '../double/LoginChallengeRepositoryInMemory.js';
+import {TokenRevocationRepositoryInMemory} from '../double/TokenRevocationRepositoryInMemory.js';
 import {TokenSigningConfigFake} from '../double/TokenSigningConfigFake.js';
 
 export const CONTRACT_API_NAME = 'api-test';
@@ -38,6 +40,7 @@ export class LoginContractHarness {
   public readonly logger: LoggerSpy = new LoggerSpy();
   public readonly loginChallengeRepository: LoginChallengeRepositoryInMemory = new LoginChallengeRepositoryInMemory();
   public readonly requestThrottle: RequestThrottleScripted = new RequestThrottleScripted();
+  public readonly tokenRevocationRepository: TokenRevocationRepositoryInMemory = new TokenRevocationRepositoryInMemory();
   private readonly httpServer: HttpServerExpress;
 
   public constructor (private readonly port: number) {
@@ -88,6 +91,9 @@ export class LoginContractHarness {
     this.requestThrottle.nextDecision = {isAllowed: true, retryAfterSeconds: 0};
     this.encrypter.compareCallCount = 0;
     this.encrypter.encryptCallCount = 0;
+    this.tokenRevocationRepository.cutoffList.splice(0);
+    this.tokenRevocationRepository.revokedTokenList.splice(0);
+    this.tokenRevocationRepository.nextError = null;
   }
 
   public async start (): Promise<void> {
@@ -98,6 +104,7 @@ export class LoginContractHarness {
       [LOGGER, this.logger],
       [LOGIN_CHALLENGE_REPOSITORY, this.loginChallengeRepository],
       [REQUEST_THROTTLE, this.requestThrottle],
+      [TOKEN_REVOCATION_REPOSITORY, this.tokenRevocationRepository],
       [TOKEN_SIGNING_CONFIG, new TokenSigningConfigFake(CONTRACT_SIGNING_SECRET)]
     ];
 

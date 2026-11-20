@@ -12,6 +12,8 @@ export class RefreshTokenVerifierFake implements RefreshTokenVerifier {
       throw new Unauthorized('Invalid refresh token');
     }
 
-    return {accountId: Uuid.fromPrimitives(accountId), provider: knownProvider};
+    const issuedAt = new Date();
+
+    return {accountId: Uuid.fromPrimitives(accountId), expiresAt: new Date(issuedAt.getTime() + 2_592_000_000), issuedAt, provider: knownProvider, tokenId: Uuid.create()};
   }
 }

@@ -11,16 +11,16 @@ const baseIdentityPrimitives = {
 };
 
 describe('Identity union typing', (): void => {
-  it('rejects a password identity carrying a verification code', (): void => {
-    // @ts-expect-error the password variant excludes the phone variant's fields
-    const invalidIdentity: IdentityPrimitives = {...baseIdentityPrimitives, code: '123456', hash: 'h', password: 'p', provider: IDENTITY_PROVIDERS.PASSWORD};
+  it('rejects a password identity carrying an oauth provider user id', (): void => {
+    // @ts-expect-error the password variant excludes the oauth variants' fields
+    const invalidIdentity: IdentityPrimitives = {...baseIdentityPrimitives, hash: 'h', password: 'p', provider: IDENTITY_PROVIDERS.PASSWORD, providerUserId: 'g'};
 
     expect(invalidIdentity.provider).toBe(IDENTITY_PROVIDERS.PASSWORD);
   });
 
   it('rejects a phone identity carrying an email', (): void => {
     // @ts-expect-error the phone variant excludes the oauth variants' fields
-    const invalidIdentity: IdentityPrimitives = {...baseIdentityPrimitives, code: '123456', email: 'someone@example.com', provider: IDENTITY_PROVIDERS.PHONE};
+    const invalidIdentity: IdentityPrimitives = {...baseIdentityPrimitives, email: 'someone@example.com', provider: IDENTITY_PROVIDERS.PHONE};
 
     expect(invalidIdentity.provider).toBe(IDENTITY_PROVIDERS.PHONE);
   });
@@ -33,7 +33,7 @@ describe('Identity union typing', (): void => {
   });
 
   it('keeps every union key readable on the union type', (): void => {
-    const identity: IdentityPrimitives = {...baseIdentityPrimitives, code: '123456', provider: IDENTITY_PROVIDERS.PHONE};
+    const identity: IdentityPrimitives = {...baseIdentityPrimitives, provider: IDENTITY_PROVIDERS.PHONE};
     const email: string | undefined = identity.email;
 
     expect(email).toBeUndefined();

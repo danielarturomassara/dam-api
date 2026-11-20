@@ -3,13 +3,11 @@ import {normalizePhone} from '@account/application/normalizePhone.js';
 import {BaseRegistration} from '@account/application/useCase/registration/BaseRegistration.js';
 import {FieldSchemas} from '@account/application/useCase/registration/FieldSchemas.js';
 import {parseWithSchema} from '@account/application/useCase/registration/parseWithSchema.js';
-import {ACCOUNT_CONFIG, AccountConfig} from '@account/domain/AccountConfig.js';
 import {ACCOUNT_REPOSITORY, AccountRepository} from '@account/domain/AccountRepository.js';
 import {Account} from '@account/domain/entity/Account.js';
 import {IdentityProviderPhone} from '@account/domain/entity/IdentityProviderPhone.js';
 import {DuplicateContact} from '@account/domain/error/DuplicateContact.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
-import {VerificationCode} from '@account/domain/valueObject/VerificationCode.js';
 import {Phone} from '@core/domain/valueObject/Phone.js';
 import {inject, injectable} from 'inversify';
 
@@ -20,8 +18,7 @@ const phoneProviderDataSchema = FieldSchemas.providerData(IDENTITY_PROVIDERS.PHO
 @injectable()
 export class PhoneRegistration extends BaseRegistration<ProviderPhone> {
   public constructor (
-    @inject(ACCOUNT_REPOSITORY) private readonly accountRepository: AccountRepository,
-    @inject(ACCOUNT_CONFIG) private readonly accountConfig: AccountConfig
+    @inject(ACCOUNT_REPOSITORY) private readonly accountRepository: AccountRepository
   ) {
     super();
   }
@@ -30,7 +27,6 @@ export class PhoneRegistration extends BaseRegistration<ProviderPhone> {
     await this.checkIfPhoneAlreadyExists(providerData.phone);
 
     const identity = IdentityProviderPhone.create({
-      code: VerificationCode.generate(this.accountConfig.getVerificationCodeLength()).toPrimitives(),
       disabledAt: null,
       provider: IDENTITY_PROVIDERS.PHONE,
       verifiedAt: null

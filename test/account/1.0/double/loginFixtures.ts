@@ -46,7 +46,7 @@ export const buildPasswordLoginAccount = (email: string, state: LoginAccountStat
 };
 
 export const buildPhoneLoginAccount = (phone: string, state: LoginAccountState = {}): Account => {
-  const identity: IdentityPrimitives = {...buildBaseIdentity(state), code: '123456', provider: IDENTITY_PROVIDERS.PHONE};
+  const identity: IdentityPrimitives = {...buildBaseIdentity(state), provider: IDENTITY_PROVIDERS.PHONE};
 
   return buildAccount([identity], null, phone, state);
 };

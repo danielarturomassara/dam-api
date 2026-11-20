@@ -16,6 +16,9 @@ import {PasswordRegistration} from '@account/application/useCase/registration/Pa
 import {PhoneRegistration} from '@account/application/useCase/registration/PhoneRegistration.js';
 import {REGISTRATION_STRATEGY_REGISTRY, RegistrationStrategyRegistry} from '@account/application/useCase/registration/RegistrationStrategy.js';
 import {RequestLoginCode} from '@account/application/useCase/RequestLoginCode.js';
+import {PasswordVerification} from '@account/application/useCase/verification/PasswordVerification.js';
+import {VERIFICATION_STRATEGY_REGISTRY, VerificationStrategyRegistry} from '@account/application/useCase/verification/VerificationStrategy.js';
+import {VerifyIdentity} from '@account/application/useCase/VerifyIdentity.js';
 import {ACCOUNT_CONFIG, AccountConfig} from '@account/domain/AccountConfig.js';
 import {ACCOUNT_REPOSITORY, AccountRepository} from '@account/domain/AccountRepository.js';
 import {ENCRYPTER, Encrypter} from '@account/domain/Encrypter.js';
@@ -60,6 +63,8 @@ export default new ContainerModule((options: ContainerModuleLoadOptions) => {
   options.bind<Login>(Login).toSelf();
   options.bind<RequestLoginCode>(RequestLoginCode).toSelf();
   options.bind<RefreshAccessToken>(RefreshAccessToken).toSelf();
+  options.bind<PasswordVerification>(PasswordVerification).toSelf();
+  options.bind<VerifyIdentity>(VerifyIdentity).toSelf();
 
   options.bind<LoginStrategyRegistry>(LOGIN_STRATEGY_REGISTRY)
     .toDynamicValue((context): LoginStrategyRegistry => {
@@ -78,6 +83,14 @@ export default new ContainerModule((options: ContainerModuleLoadOptions) => {
       return {
         [IDENTITY_PROVIDERS.PHONE]: context.get(LoginCodeRequestNotAvailable)
       } satisfies LoginCodeRequestStrategyRegistry;
+    })
+    .inSingletonScope();
+
+  options.bind<VerificationStrategyRegistry>(VERIFICATION_STRATEGY_REGISTRY)
+    .toDynamicValue((context): VerificationStrategyRegistry => {
+      return {
+        [IDENTITY_PROVIDERS.PASSWORD]: context.get(PasswordVerification)
+      } satisfies VerificationStrategyRegistry;
     })
     .inSingletonScope();
 

@@ -77,12 +77,24 @@ describe('RequestLoginCode with the phone strategy', (): void => {
   it.each<[LoginAccountState, string]>([
     [{isAccountDisabled: true}, 'account disabled'],
     [{isIdentityDisabled: true}, 'identity disabled'],
-    [{isIdentityVerified: false}, 'identity not verified']
+    [{isAccountDisabled: true, isIdentityDisabled: true, isIdentityVerified: false}, 'account disabled'],
+    [{isIdentityDisabled: true, isIdentityVerified: false}, 'identity disabled']
   ])('throws LoginNotAllowed and sends nothing in state %o', async (state: LoginAccountState, expectedReason: string): Promise<void> => {
     await accountRepository.create(buildPhoneLoginAccount(PHONE, state));
 
     await expect(requestLoginCode.run(phoneInput())).rejects.toThrow(new LoginNotAllowed(expectedReason as LoginNotAllowed['reason']));
     expect(loginCodeSender.sentList).toStrictEqual([]);
+  });
+
+  it('sends a code to an unverified phone identity, because proving that code is what verifies it', async (): Promise<void> => {
+    const account = buildPhoneLoginAccount(PHONE, {isIdentityVerified: false});
+
+    await accountRepository.create(account);
+    await requestLoginCode.run(phoneInput());
+
+    expect(loginCodeSender.sentList).toHaveLength(1);
+    expect(loginChallengeRepository.challengeList).toHaveLength(1);
+    expect(account.getIdentities()[0]?.isVerified()).toBe(false);
   });
 
   it.each([

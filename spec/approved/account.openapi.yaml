@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Account module
   version: "1.0"
-  description: Machine-readable form of spec/approved/account.spec.md §3.3 and §3.6–§3.8. The prose tables and this document say the same thing; when they disagree, the prose wins. The endpoint contract suites pin each implemented response row against the running stack.
+  description: Machine-readable form of spec/approved/account.spec.md §3.3, §3.6–§3.8 and §3.10. The prose tables and this document say the same thing; when they disagree, the prose wins. The endpoint contract suites pin each implemented response row against the running stack.
 paths:
   /auth/register:
     post:
@@ -51,6 +51,38 @@ paths:
           description: The functionality is not implemented.
         "500":
           $ref: "#/components/responses/UnknownError"
+  /auth/verify:
+    post:
+      operationId: verifyIdentity
+      summary: Verify an identity that is verified through a link, without logging in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+      responses:
+        "204":
+          description: The identity was verified. No token is issued.
+        "400":
+          description: The verification is not proven (one message for every cause), the body is malformed, fails a rule in §4.17, or names a provider that has no verification step.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reason"
+              examples:
+                notProven:
+                  value: "Invalid or expired verification"
+                missingField:
+                  value: "hash is required for password provider"
+                mistypedField:
+                  value: "email must be a string for password provider"
+                providerWithoutVerification:
+                  value: "phone provider has no verification step"
+        "429":
+          $ref: "#/components/responses/Throttled"
+        "500":
+          $ref: "#/components/responses/UnknownError"
   /auth/login:
     post:
       operationId: login
@@ -63,7 +95,7 @@ paths:
               $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: The credential is proven and the identity may log in.
+          description: The credential is proven and the identity may log in. The first code a phone identity proves also verifies it.
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
@@ -122,7 +154,7 @@ paths:
               $ref: "#/components/schemas/LoginCodeRequest"
       responses:
         "202":
-          description: A code was sent, or the request was silenced — the phone belongs to no account, the account has no phone identity, the identity may not log in, or a code was requested less than the resend interval ago.
+          description: A code was sent, or the request was silenced — the phone belongs to no account, the account has no phone identity, the account or the identity is disabled, or a code was requested less than the resend interval ago. An unverified phone identity is sent a code.
         "400":
           description: The body is malformed, fails a rule in §4.8, or names a provider that sends no codes.
           content:
@@ -339,6 +371,24 @@ components:
                     - {type: string}
                 userID: {type: string}
             status: {type: string}
+    VerifyRequest:
+      description: Only the password provider has a verification step. Unknown fields at any depth are ignored.
+      type: object
+      required: [provider, providerData]
+      properties:
+        provider:
+          const: password
+        providerData:
+          type: object
+          required: [email, hash]
+          properties:
+            email:
+              type: string
+              format: email
+              description: The account's primary email. Lower-cased before validation.
+            hash:
+              type: string
+              description: The token of the verification link. It verifies once, within 24 hours of the registration.
     LoginNotAllowed:
       type: string
       enum:

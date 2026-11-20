@@ -89,6 +89,20 @@ describe('POST /auth/login/code contract with delivery (spec/approved/account.sp
     expect(harness.logger.warningList).toStrictEqual([]);
   });
 
+  it('202 Accepted, empty body — a code was sent to an unverified phone identity, and logging in with it verifies the identity', async (): Promise<void> => {
+    const account = buildPhoneLoginAccount(PHONE, {isIdentityVerified: false});
+
+    await harness.accountRepository.create(account);
+
+    const codeResponse = await harness.post('/auth/login/code', phoneRequest());
+    const loginResponse = await harness.post('/auth/login', {provider: 'phone', providerData: {code: loginCodeSender.sentList[0]?.code, phone: PHONE}});
+
+    expect(codeResponse).toMatchObject({body: '', contentType: '', status: 202});
+    expect(harness.logger.warningList).toStrictEqual([]);
+    expect(loginResponse.status).toBe(200);
+    expect(account.getIdentities()[0]?.isVerified()).toBe(true);
+  });
+
   it('then logs in with the code that was sent', async (): Promise<void> => {
     await harness.accountRepository.create(buildPhoneLoginAccount(PHONE));
     await harness.post('/auth/login/code', phoneRequest());
@@ -101,9 +115,9 @@ describe('POST /auth/login/code contract with delivery (spec/approved/account.sp
   it.each<[string, () => Promise<void>, string]>([
     ['the phone belongs to no account', async (): Promise<void> => undefined, 'Silenced a login code request (Account not found.)'],
     [
-      'the identity may not log in',
-      async (): Promise<void> => harness.accountRepository.create(buildPhoneLoginAccount(PHONE, {isIdentityVerified: false})),
-      'Silenced a login code request (Login not allowed. Reason: identity not verified.)'
+      'the identity may not be sent a code',
+      async (): Promise<void> => harness.accountRepository.create(buildPhoneLoginAccount(PHONE, {isIdentityDisabled: true})),
+      'Silenced a login code request (Login not allowed. Reason: identity disabled.)'
     ],
     [
       'a code was requested less than the resend interval ago',

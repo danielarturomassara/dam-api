@@ -28,7 +28,7 @@ export class PhoneLoginCodeRequest implements LoginCodeRequestStrategy {
 
   public async request (rawProviderData: unknown): Promise<void> {
     const phone = parseLoginCodePhone(rawProviderData);
-    const account = await this.findAccountThatMayLogIn(phone);
+    const account = await this.findAccountThatMayBeChallenged(phone);
     const loginChallengePolicy = this.accountConfig.getLoginChallengePolicy().toPrimitives();
 
     const latestChallenge = await this.findLatestChallengeOutsideResendInterval(account, loginChallengePolicy.resendIntervalSeconds);
@@ -67,7 +67,7 @@ export class PhoneLoginCodeRequest implements LoginCodeRequestStrategy {
     return latestChallenge;
   }
 
-  private async findAccountThatMayLogIn (phone: Phone): Promise<Account> {
+  private async findAccountThatMayBeChallenged (phone: Phone): Promise<Account> {
     const account = await this.accountRepository.findByPhone(phone);
     const identity = account?.matchesPrimaryPhone(phone) ? account.getIdentity(IDENTITY_PROVIDERS.PHONE) : null;
 
@@ -75,7 +75,7 @@ export class PhoneLoginCodeRequest implements LoginCodeRequestStrategy {
       throw new NotFound('Account');
     }
 
-    account.ensureCanAuthenticateWith(identity);
+    account.ensureCanBeChallengedWith(identity);
 
     return account;
   }

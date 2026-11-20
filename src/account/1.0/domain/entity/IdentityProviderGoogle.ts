@@ -1,5 +1,6 @@
 import {BaseIdentity, BaseIdentityPrimitives} from '@account/domain/entity/BaseIdentity.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
+import {IDENTITY_VERIFICATION_MODES} from '@account/domain/IdentityVerificationModes.js';
 import {TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
 import {Email} from '@core/domain/valueObject/Email.js';
 import {TrimmedString} from '@core/domain/valueObject/TrimmedString.js';
@@ -27,6 +28,10 @@ export class IdentityProviderGoogle extends BaseIdentity {
 
   public static fromPrimitives (primitives: IdentityProviderGooglePrimitives): IdentityProviderGoogle {
     return new IdentityProviderGoogle(primitives);
+  }
+
+  public getVerificationMode (): IDENTITY_VERIFICATION_MODES {
+    return IDENTITY_VERIFICATION_MODES.ON_CREATION;
   }
 
   public override toPrimitives (): IdentityProviderGooglePrimitives {

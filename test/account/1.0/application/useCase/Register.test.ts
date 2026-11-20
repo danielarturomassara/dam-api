@@ -65,7 +65,7 @@ describe('Register', (): void => {
 
     expect(accountPrimitives).toMatchObject({disabledAt: null, primaryEmail: null, primaryPhone: '+34600123456'});
     expect(accountPrimitives?.identities[0]).toMatchObject({disabledAt: null, provider: IDENTITY_PROVIDERS.PHONE, verifiedAt: null});
-    expect(accountPrimitives?.identities[0]?.code).toMatch(/^\d{6}$/);
+    expect(accountPrimitives?.identities[0]).not.toHaveProperty('code');
     expect(accountPrimitives?.identities[0]).not.toHaveProperty('phone');
   });
 });

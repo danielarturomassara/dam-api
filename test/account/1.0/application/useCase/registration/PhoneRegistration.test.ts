@@ -3,14 +3,10 @@ import {DuplicateContact} from '@account/domain/error/DuplicateContact.js';
 import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {describe, expect, it} from 'vitest';
 
-import {AccountConfigFake} from '../../../double/AccountConfigFake.js';
 import {AccountRepositoryInMemory} from '../../../double/AccountRepositoryInMemory.js';
 
-const buildPhoneRegistration = (
-  accountRepository: AccountRepositoryInMemory = new AccountRepositoryInMemory(),
-  accountConfig: AccountConfigFake = new AccountConfigFake()
-): PhoneRegistration => {
-  return new PhoneRegistration(accountRepository, accountConfig);
+const buildPhoneRegistration = (accountRepository: AccountRepositoryInMemory = new AccountRepositoryInMemory()): PhoneRegistration => {
+  return new PhoneRegistration(accountRepository);
 };
 
 describe('PhoneRegistration', (): void => {
@@ -36,12 +32,12 @@ describe('PhoneRegistration', (): void => {
     await expect(buildPhoneRegistration().register({phone})).rejects.toThrow(InvalidArgument);
   });
 
-  it('creates an unverified phone identity holding a code of the configured length and no phone of its own', async (): Promise<void> => {
-    const account = await buildPhoneRegistration(new AccountRepositoryInMemory(), new AccountConfigFake({}, 4)).register({phone: '+34600123456'});
+  it('creates an unverified phone identity holding no verification code and no phone of its own', async (): Promise<void> => {
+    const account = await buildPhoneRegistration().register({phone: '+34600123456'});
     const identity = account.toPrimitives().identities[0];
 
-    expect(identity).toMatchObject({disabledAt: null, verifiedAt: null});
-    expect(identity?.code).toMatch(/^\d{4}$/);
+    expect(identity).toMatchObject({disabledAt: null, provider: 'phone', verifiedAt: null});
+    expect(identity).not.toHaveProperty('code');
     expect(identity).not.toHaveProperty('phone');
     expect(account.toPrimitives().primaryEmail).toBeNull();
   });

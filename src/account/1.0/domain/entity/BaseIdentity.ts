@@ -1,4 +1,5 @@
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
+import {IDENTITY_VERIFICATION_MODES} from '@account/domain/IdentityVerificationModes.js';
 import {TimestampedEntity, TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
 import {Conflict} from '@core/domain/error/Conflict.js';
 import {Nullable} from '@core/domain/type/Nullable.js';
@@ -40,6 +41,8 @@ export abstract class BaseIdentity extends TimestampedEntity {
 
     this.#disabledAt = null;
   }
+
+  public abstract getVerificationMode (): IDENTITY_VERIFICATION_MODES;
 
   public isDisabled (): boolean {
     return this.#disabledAt !== null;

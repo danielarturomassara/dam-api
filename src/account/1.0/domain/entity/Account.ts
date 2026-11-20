@@ -2,10 +2,12 @@ import {Identity, IdentityPrimitives} from '@account/domain/entity/Identity.js';
 import {IdentityFactory} from '@account/domain/entity/IdentityFactory.js';
 import {LoginNotAllowed} from '@account/domain/error/LoginNotAllowed.js';
 import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
+import {IDENTITY_VERIFICATION_MODES} from '@account/domain/IdentityVerificationModes.js';
 import {TimestampedEntity, TimestampedEntityPrimitives} from '@core/domain/entity/TimestampedEntity.js';
 import {Conflict} from '@core/domain/error/Conflict.js';
 import {InvalidArgument} from '@core/domain/error/InvalidArgument.js';
 import {NotFound} from '@core/domain/error/NotFound.js';
+import {ServerError} from '@core/domain/error/ServerError.js';
 import {Nullable} from '@core/domain/type/Nullable.js';
 import {Email} from '@core/domain/valueObject/Email.js';
 import {Phone} from '@core/domain/valueObject/Phone.js';
@@ -64,6 +66,20 @@ export class Account extends TimestampedEntity {
     }
   }
 
+  public ensureCanBeChallengedWith (identity: Identity): void {
+    if (this.isDisabled()) {
+      throw new LoginNotAllowed('account disabled');
+    }
+
+    if (identity.isDisabled()) {
+      throw new LoginNotAllowed('identity disabled');
+    }
+
+    if (!identity.isVerified() && !this.isVerifiedByLogin(identity)) {
+      throw new LoginNotAllowed('identity not verified');
+    }
+  }
+
   public getIdentities (): ReadonlyArray<Identity> {
     return [...this.#identities];
   }
@@ -86,6 +102,20 @@ export class Account extends TimestampedEntity {
 
   public matchesPrimaryPhone (phone: Phone): boolean {
     return this.primaryPhone?.toPrimitives() === phone.toPrimitives();
+  }
+
+  public recordProvenCredential (identity: Identity): boolean {
+    if (!this.#identities.includes(identity)) {
+      throw new ServerError('A proven credential belongs to an identity the account does not hold');
+    }
+
+    if (identity.isVerified() || !this.isVerifiedByLogin(identity)) {
+      return false;
+    }
+
+    identity.verify();
+
+    return true;
   }
 
   public removeIdentity (identityId: Uuid): void {
@@ -136,6 +166,10 @@ export class Account extends TimestampedEntity {
         throw new Conflict(`Identity provider ${provider} is already held`);
       }
     }
+  }
+
+  private isVerifiedByLogin (identity: Identity): boolean {
+    return identity.getVerificationMode() === IDENTITY_VERIFICATION_MODES.BY_LOGIN;
   }
 
   private ensureProviderIsNotHeld (provider: Identity['provider']): void {

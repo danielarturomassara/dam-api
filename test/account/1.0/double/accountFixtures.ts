@@ -17,7 +17,6 @@ export const buildPasswordIdentity = (): IdentityProviderPassword => {
 
 export const buildPhoneIdentity = (): IdentityProviderPhone => {
   return IdentityProviderPhone.create({
-    code: '123456',
     disabledAt: null,
     provider: IDENTITY_PROVIDERS.PHONE,
     verifiedAt: null

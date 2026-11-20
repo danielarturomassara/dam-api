@@ -23,7 +23,7 @@ beforeEach((): void => {
   accountRepository = new AccountRepositoryInMemory();
   loginChallengeRepository = new LoginChallengeRepositoryInMemory();
   tokenIssuer = new TokenIssuerFake();
-  login = new Login(buildLoginStrategyRegistry(accountRepository, loginChallengeRepository, new EncrypterCounting()), tokenIssuer);
+  login = new Login(buildLoginStrategyRegistry(accountRepository, loginChallengeRepository, new EncrypterCounting()), tokenIssuer, accountRepository);
 });
 
 describe('Login', (): void => {

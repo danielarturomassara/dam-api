@@ -22,6 +22,6 @@ export const buildRegistrationStrategyRegistry = (
     [IDENTITY_PROVIDERS.GOOGLE]: new GoogleRegistration(),
     [IDENTITY_PROVIDERS.META]: new MetaRegistration(),
     [IDENTITY_PROVIDERS.PASSWORD]: new PasswordRegistration(encrypter, accountRepository, accountConfig),
-    [IDENTITY_PROVIDERS.PHONE]: new PhoneRegistration(accountRepository, accountConfig)
+    [IDENTITY_PROVIDERS.PHONE]: new PhoneRegistration(accountRepository)
   };
 };

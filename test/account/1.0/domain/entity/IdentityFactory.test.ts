@@ -22,7 +22,7 @@ const identityPrimitivesList: Array<[IdentityPrimitives, unknown]> = [
   [{...baseIdentityPrimitives, email: 'someone@example.com', provider: IDENTITY_PROVIDERS.GOOGLE, providerUserId: 'google-user-1'}, IdentityProviderGoogle],
   [{...baseIdentityPrimitives, email: 'someone@example.com', provider: IDENTITY_PROVIDERS.META, providerUserId: 'meta-user-1'}, IdentityProviderMeta],
   [{...baseIdentityPrimitives, hash: 'verification-hash', password: 'hashed-password', provider: IDENTITY_PROVIDERS.PASSWORD}, IdentityProviderPassword],
-  [{...baseIdentityPrimitives, code: '123456', provider: IDENTITY_PROVIDERS.PHONE}, IdentityProviderPhone]
+  [{...baseIdentityPrimitives, provider: IDENTITY_PROVIDERS.PHONE}, IdentityProviderPhone]
 ];
 
 describe('IdentityFactory', (): void => {

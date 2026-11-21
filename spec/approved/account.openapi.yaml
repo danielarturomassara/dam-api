@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Account module
   version: "1.0"
-  description: Machine-readable form of spec/approved/account.spec.md §3.3, §3.6–§3.8 and §3.10. The prose tables and this document say the same thing; when they disagree, the prose wins. The endpoint contract suites pin each implemented response row against the running stack.
+  description: Machine-readable form of spec/approved/account.spec.md §3.3, §3.6–§3.8 and §3.10–§3.12. The prose tables and this document say the same thing; when they disagree, the prose wins. The endpoint contract suites pin each implemented response row against the running stack.
 paths:
   /auth/register:
     post:
@@ -184,7 +184,7 @@ paths:
               $ref: "#/components/schemas/RefreshRequest"
       responses:
         "200":
-          description: The refresh token is valid and its identity may log in. No new refresh token is issued.
+          description: The refresh token is valid, is not revoked, and its identity may log in. No new refresh token is issued.
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
@@ -204,7 +204,7 @@ paths:
                 mistypedToken:
                   value: "refreshToken must be a string"
         "401":
-          description: The refresh token is not valid, or its account or identity no longer exists. One message for every cause.
+          description: The refresh token is not valid, is revoked, or its account or identity no longer exists. One message for every cause.
           headers:
             WWW-Authenticate:
               $ref: "#/components/headers/BearerChallenge"
@@ -221,7 +221,67 @@ paths:
                 $ref: "#/components/schemas/LoginNotAllowed"
         "500":
           $ref: "#/components/responses/UnknownError"
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: End one login by revoking its access token and its refresh token
+      security:
+        - bearerAccessToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "204":
+          description: The access token of the header and the refresh token of the body are revoked. Logging out twice answers the same.
+        "400":
+          description: The body is malformed, or refreshToken is missing or not a string.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reason"
+              examples:
+                missingToken:
+                  value: "refreshToken is required"
+                mistypedToken:
+                  value: "refreshToken must be a string"
+        "401":
+          description: The request carries no bearer token, the access token is not valid or is revoked, or the refresh token is not valid or is not a token of the authenticated account. Nothing is revoked.
+          headers:
+            WWW-Authenticate:
+              $ref: "#/components/headers/BearerChallenge"
+          content:
+            application/json:
+              schema:
+                type: string
+                enum:
+                  - "Unauthorized. Reason: Missing access token."
+                  - "Unauthorized. Reason: Invalid access token."
+                  - "Unauthorized. Reason: Invalid refresh token."
+        "500":
+          $ref: "#/components/responses/UnknownError"
+  /auth/logout/all:
+    post:
+      operationId: logoutEverywhere
+      summary: End every login of the account by revoking every token issued to it so far
+      security:
+        - bearerAccessToken: []
+      responses:
+        "204":
+          description: Every token issued to the account up to this request is revoked, the access token of the header included. A token issued afterwards is not.
+        "401":
+          $ref: "#/components/responses/NotAuthenticated"
+        "500":
+          $ref: "#/components/responses/UnknownError"
 components:
+  securitySchemes:
+    bearerAccessToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: The access token of POST /auth/login or POST /auth/token/refresh, in the Authorization header. It authenticates until it expires or is revoked.
   headers:
     BearerChallenge:
       description: The challenge every 401 answer carries (core.spec.md §4.5).
@@ -239,6 +299,18 @@ components:
         type: integer
         minimum: 1
   responses:
+    NotAuthenticated:
+      description: The request carries no bearer token, or its access token is not valid or is revoked (§4.18).
+      headers:
+        WWW-Authenticate:
+          $ref: "#/components/headers/BearerChallenge"
+      content:
+        application/json:
+          schema:
+            type: string
+            enum:
+              - "Unauthorized. Reason: Missing access token."
+              - "Unauthorized. Reason: Invalid access token."
     Throttled:
       description: The client address exceeded the throttle (§4.7).
       headers:
@@ -431,6 +503,14 @@ components:
       properties:
         refreshToken:
           type: string
+    LogoutRequest:
+      description: Unknown fields are ignored.
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          description: The refresh token of the login being ended. It must be a token of the account the access token authenticates.
     LoginRequest:
       description: Unknown fields at any depth are ignored. The oauth shapes are the registration shapes, verbatim.
       oneOf:

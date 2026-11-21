@@ -4,7 +4,7 @@ Authored and edited by Daniel only. Agents: read-only. Implementation conforms t
 
 ## 1. Purpose
 
-`@core` is the cross-project standard library of the API: everything a feature module needs that carries no business meaning. It provides the domain building blocks (value objects, the entity ladder, domain errors, discriminated-union typing), the ports every module talks through (logging, configuration, HTTP serving and routing, database connections, request throttling), the adapters behind those ports, and the error middleware that turns domain errors into HTTP answers.
+`@core` is the cross-project standard library of the API: everything a feature module needs that carries no business meaning. It provides the domain building blocks (value objects, the entity ladder, domain errors, discriminated-union typing), the ports every module talks through (logging, configuration, HTTP serving and routing, database connections, request throttling, request authentication), the adapters behind those ports (the request authentication port excepted, §3.10), and the error middleware that turns domain errors into HTTP answers.
 
 ## 2. Scope
 
@@ -90,6 +90,7 @@ Each port is an interface plus a `Symbol.for` token in the same file.
 - `HttpRouter` / `HTTP_ROUTER`: `getBasePath(): string`, `registerRoutes(): Promise<express.Router>`.
 - `DatabaseConnection` / `DATABASE_CONNECTION`: `getDatabase(): Promise<unknown>`, `disconnect(): Promise<void>`.
 - `RequestThrottle` / `REQUEST_THROTTLE`: `consume(scope: ThrottleScope, clientAddress: string, throttlePolicy: ThrottlePolicy): Promise<ThrottleDecision>`, with `ThrottleDecision` = `{isAllowed: boolean; retryAfterSeconds: number}`.
+- `AccessTokenAuthenticator` / `ACCESS_TOKEN_AUTHENTICATOR`: `authenticate(accessToken: string): Promise<Authentication>`, with `Authentication` = `{expiresAt: Date; issuedAt: Date; subjectId: Uuid; tokenId: Uuid}` — the subject the token was issued to, and the identifier, issue instant and expiry instant of the token itself. It throws `Unauthorized` when the token does not authenticate a subject.
 - `STARTUP_CONFIG_VALIDATION`: a token without interface; every config binding is also bound to it as a service.
 
 ### 3.7 Application helpers (`application/`)
@@ -172,6 +173,11 @@ Constructor `(CoreConfig, Logger)`; `getBasePath()` = `'/'`. `registerRoutes()` 
 - `RequestThrottleInMemory implements RequestThrottle` (`infrastructure/RequestThrottleInMemory.ts`) — no constructor dependencies. It holds the counts in the memory of the process and measures time with the monotonic clock. `countOpenWindows(): number` is a diagnostic: how many windows it holds right now.
 - `throttle(requestThrottle: RequestThrottle, scope: ThrottleScope, throttlePolicy: ThrottlePolicy): RequestHandler` (`infrastructure/http/middleware/throttle.ts`) — consumes one request from `requestThrottle` for `scope` and `normalizeClientAddress(request.ip)` under `throttlePolicy`. When the request is allowed it calls `next()`. When it is refused it sets the header `Retry-After` to the decision's `retryAfterSeconds` and forwards `TooManyRequests()` to `next(error)`. Any failure goes to `next(error)`.
 
+#### 3.9.11 Request authentication
+
+- `authenticate(accessTokenAuthenticator: AccessTokenAuthenticator): RequestHandler` (`infrastructure/http/middleware/authenticate.ts`) — reads the bearer token of the request's `Authorization` header (§4.9) and resolves it through `accessTokenAuthenticator.authenticate`. When the token authenticates it stores the resolved `Authentication` in `response.locals.authentication` and calls `next()`. When the request carries no bearer token it forwards `Unauthorized('Missing access token')` to `next(error)` without calling the authenticator. Any failure, the authenticator's `Unauthorized` included, goes to `next(error)` unchanged.
+- `getAuthentication(response: Response): Authentication` (`infrastructure/http/getAuthentication.ts`) — returns the `Authentication` the middleware stored for the request. When there is none it throws `ServerError('The request was not authenticated.')`.
+
 ### 3.10 Ports and adapters (`dependencyContainerModule.ts`)
 
 | port | adapter | scope |
@@ -185,6 +191,7 @@ Constructor `(CoreConfig, Logger)`; `getBasePath()` = `'/'`. `registerRoutes()` 
 | `REQUEST_THROTTLE` | `RequestThrottleInMemory` | singleton |
 | `POSTGRESQL_CONFIG` (also `STARTUP_CONFIG_VALIDATION`) | `PostgreSqlConfigEnvironment` | singleton, bound only while a module consumes the connection |
 | `DATABASE_CONNECTION` | `DatabaseConnectionPostgreSQL` | singleton, bound only while a module consumes it |
+| `ACCESS_TOKEN_AUTHENTICATOR` | none in `@core`: the feature module that issues the access tokens binds its own adapter in its own wiring | singleton |
 
 Classes bound to themselves: `MongoConnection` (singleton), `RepositoryMongo`, `DataSeeder`.
 
@@ -263,6 +270,20 @@ Classes bound to themselves: `MongoConnection` (singleton), `RepositoryMongo`, `
 - A request the `throttle` middleware refuses shall answer `429` with the body `"Too many requests."` and the header `Retry-After`. The middleware shall run before the endpoint's handler, so nothing else happens for a refused request. A request the HTTP server rejects before routing it (a malformed JSON body, an oversized body) does not count.
 - `RequestThrottleInMemory` loses its counts on restart and does not share them between processes. It shall never count against a window that has ended and shall discard ended windows, so its memory is bounded by the distinct client addresses seen inside one window of each scope. A deployment that runs more than one process binds another adapter of the port in the wiring.
 
+### 4.9 Request authentication
+
+- `@core` provides the mechanism only: the `authenticate` middleware and the `AccessTokenAuthenticator` port it asks. `@core` shall issue, verify and revoke no token, shall name no claim and no token format, and shall bind no adapter of the port. The feature module that issues the access tokens binds the adapter; every module that protects an endpoint shares that one binding.
+- A module protects an endpoint by placing the `authenticate` middleware before the endpoint's handler, so nothing else happens for a request that does not authenticate: no validation of the body, no lookup, no write.
+- A request carries a bearer token when its `Authorization` header matches `/^Bearer +([A-Za-z0-9\-._~+/]+=*)$/i` (RFC 6750 §2.1; the scheme is compared without regard to case). The captured group is the token.
+- The middleware shall read the token from the `Authorization` header only, and never from the query string or the body: a token in a URL ends up in logs and in browser history.
+- A request without an `Authorization` header, or whose header does not match, shall answer `401` with the body `"Unauthorized. Reason: Missing access token."`, and the middleware shall not call the authenticator.
+- A token the authenticator refuses shall answer with the error the authenticator threw. The middleware shall forward that error unchanged and shall never answer itself.
+- The middleware shall treat any other failure of the authenticator as a refusal to proceed: the error goes to the error middleware and the handler shall not run. A request shall never pass because the authenticator could not answer.
+- A handler behind the middleware shall read who is calling through `getAuthentication`, and never from the header or the body. `getAuthentication` on a request the middleware did not authenticate shall throw `ServerError`, so an endpoint that was left unprotected by mistake fails loudly instead of acting for nobody.
+- The token shall never be logged.
+- The middleware authenticates and nothing more: it establishes who is calling. What that caller may do is the decision of the module that owns the endpoint.
+- A request the HTTP server rejects before routing it (a malformed JSON body, an oversized body) is answered before the middleware runs, whether or not it carries a token.
+
 ## 5. Errors
 
 The HTTP mapping applied by `errorHandler`, matched by `instanceof` in table order, client list before server list:
@@ -310,11 +331,11 @@ The HTTP mapping applied by `errorHandler`, matched by `instanceof` in table ord
 | `NetworkAuthenticationRequired` | `511` | empty |
 | `ServerError`, `DatabaseError`, any other `Error` | `500` | `"Unknown error"` |
 
-"message" is `error.message` serialized as a JSON string. Every `401` answer also carries the header `WWW-Authenticate: Bearer` (§4.5). A `429` answer of the `throttle` middleware also carries the header `Retry-After` (§4.8).
+"message" is `error.message` serialized as a JSON string. Every `401` answer also carries the header `WWW-Authenticate: Bearer` (§4.5), the refusals of the `authenticate` middleware (§4.9) included. A `429` answer of the `throttle` middleware also carries the header `Retry-After` (§4.8).
 
 ## 6. Non-goals
 
-`@core` does not provide: authentication or session handling, request validation beyond value objects, an ORM or query builder, PostgreSQL/MySQL/Neo4j repository base classes, a scheduler, an event bus, an HTTP client, a mailer, a use-case base class, a global configuration object, throttle scopes or limits (each module declares its own), throttle counts shared between processes, or any business concept.
+`@core` does not provide: the issuing, verification or revocation of tokens (the `authenticate` middleware only asks the port a feature module binds, §4.9), sessions, authorization by role or permission, request validation beyond value objects, an ORM or query builder, PostgreSQL/MySQL/Neo4j repository base classes, a scheduler, an event bus, an HTTP client, a mailer, a use-case base class, a global configuration object, throttle scopes or limits (each module declares its own), throttle counts shared between processes, or any business concept.
 
 ## 7. Conformance
 

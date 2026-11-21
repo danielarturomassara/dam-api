@@ -7,9 +7,13 @@ const sourceDirectory = fileURLToPath(new URL('../src/', import.meta.url));
 const moduleFileList = glob.sync('*/*/dependencyContainerModule.ts', {cwd: sourceDirectory}).sort();
 const loadSpy = vi.spyOn(Container.prototype, 'load');
 
+let loadCallCount = 0;
+
 describe('dependencyContainer module discovery', (): void => {
   beforeAll(async (): Promise<void> => {
     await import('@src/dependencyContainer.js');
+
+    loadCallCount = loadSpy.mock.calls.length;
   });
 
   it('finds the core and account modules on disk', (): void => {
@@ -18,6 +22,6 @@ describe('dependencyContainer module discovery', (): void => {
   });
 
   it('loads every module file found on disk exactly once', (): void => {
-    expect(loadSpy).toHaveBeenCalledTimes(moduleFileList.length);
+    expect(loadCallCount).toBe(moduleFileList.length);
   });
 });

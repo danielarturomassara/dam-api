@@ -3,7 +3,10 @@ import {Uuid} from '@core/domain/valueObject/Uuid.js';
 
 export interface RefreshTokenClaims {
   accountId: Uuid;
+  expiresAt: Date;
+  issuedAt: Date;
   provider: IDENTITY_PROVIDERS;
+  tokenId: Uuid;
 }
 
 export interface RefreshTokenVerifier {

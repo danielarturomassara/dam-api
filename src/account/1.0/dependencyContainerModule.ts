@@ -1,3 +1,4 @@
+import {AuthenticateAccessToken} from '@account/application/useCase/AuthenticateAccessToken.js';
 import {Login} from '@account/application/useCase/Login.js';
 import {AppleLogin} from '@account/application/useCase/login/AppleLogin.js';
 import {GoogleLogin} from '@account/application/useCase/login/GoogleLogin.js';
@@ -7,6 +8,8 @@ import {PasswordLogin} from '@account/application/useCase/login/PasswordLogin.js
 import {PhoneLogin} from '@account/application/useCase/login/PhoneLogin.js';
 import {LoginCodeRequestNotAvailable} from '@account/application/useCase/loginCode/LoginCodeRequestNotAvailable.js';
 import {LOGIN_CODE_REQUEST_STRATEGY_REGISTRY, LoginCodeRequestStrategyRegistry} from '@account/application/useCase/loginCode/LoginCodeRequestStrategy.js';
+import {Logout} from '@account/application/useCase/Logout.js';
+import {LogoutEverywhere} from '@account/application/useCase/LogoutEverywhere.js';
 import {RefreshAccessToken} from '@account/application/useCase/RefreshAccessToken.js';
 import {Register} from '@account/application/useCase/Register.js';
 import {AppleRegistration} from '@account/application/useCase/registration/AppleRegistration.js';
@@ -19,6 +22,7 @@ import {RequestLoginCode} from '@account/application/useCase/RequestLoginCode.js
 import {PasswordVerification} from '@account/application/useCase/verification/PasswordVerification.js';
 import {VERIFICATION_STRATEGY_REGISTRY, VerificationStrategyRegistry} from '@account/application/useCase/verification/VerificationStrategy.js';
 import {VerifyIdentity} from '@account/application/useCase/VerifyIdentity.js';
+import {ACCESS_TOKEN_VERIFIER, AccessTokenVerifier} from '@account/domain/AccessTokenVerifier.js';
 import {ACCOUNT_CONFIG, AccountConfig} from '@account/domain/AccountConfig.js';
 import {ACCOUNT_REPOSITORY, AccountRepository} from '@account/domain/AccountRepository.js';
 import {ENCRYPTER, Encrypter} from '@account/domain/Encrypter.js';
@@ -26,14 +30,19 @@ import {IDENTITY_PROVIDERS} from '@account/domain/IdentityProviders.js';
 import {LOGIN_CHALLENGE_REPOSITORY, LoginChallengeRepository} from '@account/domain/LoginChallengeRepository.js';
 import {REFRESH_TOKEN_VERIFIER, RefreshTokenVerifier} from '@account/domain/RefreshTokenVerifier.js';
 import {TOKEN_ISSUER, TokenIssuer} from '@account/domain/TokenIssuer.js';
+import {TOKEN_REVOCATION_REPOSITORY, TokenRevocationRepository} from '@account/domain/TokenRevocationRepository.js';
 import {TOKEN_SIGNING_CONFIG, TokenSigningConfig} from '@account/domain/TokenSigningConfig.js';
+import {AccessTokenAuthenticatorInProcess} from '@account/infrastructure/AccessTokenAuthenticatorInProcess.js';
 import {AccountConfigEnvironment} from '@account/infrastructure/AccountConfigEnvironment.js';
 import {EncrypterBcrypt} from '@account/infrastructure/EncrypterBcrypt.js';
+import {AccessTokenVerifierJsonWebToken} from '@account/infrastructure/jsonwebtoken/AccessTokenVerifierJsonWebToken.js';
 import {RefreshTokenVerifierJsonWebToken} from '@account/infrastructure/jsonwebtoken/RefreshTokenVerifierJsonWebToken.js';
 import {TokenIssuerJsonWebToken} from '@account/infrastructure/jsonwebtoken/TokenIssuerJsonWebToken.js';
 import {AccountRepositoryMongo} from '@account/infrastructure/mongodb/AccountRepositoryMongo.js';
 import {LoginChallengeRepositoryMongo} from '@account/infrastructure/mongodb/LoginChallengeRepositoryMongo.js';
+import {TokenRevocationRepositoryMongo} from '@account/infrastructure/mongodb/TokenRevocationRepositoryMongo.js';
 import {TokenSigningConfigEnvironment} from '@account/infrastructure/TokenSigningConfigEnvironment.js';
+import {ACCESS_TOKEN_AUTHENTICATOR, AccessTokenAuthenticator} from '@core/domain/AccessTokenAuthenticator.js';
 import {STARTUP_CONFIG_VALIDATION} from '@core/domain/StartupConfigValidation.js';
 import {ContainerModule, ContainerModuleLoadOptions} from 'inversify';
 
@@ -63,6 +72,13 @@ export default new ContainerModule((options: ContainerModuleLoadOptions) => {
   options.bind<Login>(Login).toSelf();
   options.bind<RequestLoginCode>(RequestLoginCode).toSelf();
   options.bind<RefreshAccessToken>(RefreshAccessToken).toSelf();
+
+  options.bind<AccessTokenVerifier>(ACCESS_TOKEN_VERIFIER).to(AccessTokenVerifierJsonWebToken).inSingletonScope();
+  options.bind<TokenRevocationRepository>(TOKEN_REVOCATION_REPOSITORY).to(TokenRevocationRepositoryMongo).inSingletonScope();
+  options.bind<AccessTokenAuthenticator>(ACCESS_TOKEN_AUTHENTICATOR).to(AccessTokenAuthenticatorInProcess).inSingletonScope();
+  options.bind<AuthenticateAccessToken>(AuthenticateAccessToken).toSelf();
+  options.bind<Logout>(Logout).toSelf();
+  options.bind<LogoutEverywhere>(LogoutEverywhere).toSelf();
   options.bind<PasswordVerification>(PasswordVerification).toSelf();
   options.bind<VerifyIdentity>(VerifyIdentity).toSelf();
 

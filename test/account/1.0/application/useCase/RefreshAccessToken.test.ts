@@ -9,6 +9,7 @@ import {AccountRepositoryInMemory} from '../../double/AccountRepositoryInMemory.
 import {buildPasswordLoginAccount, LoginAccountState} from '../../double/loginFixtures.js';
 import {RefreshTokenVerifierFake} from '../../double/RefreshTokenVerifierFake.js';
 import {TokenIssuerFake} from '../../double/TokenIssuerFake.js';
+import {TokenRevocationRepositoryInMemory} from '../../double/TokenRevocationRepositoryInMemory.js';
 
 const INVALID_REFRESH_TOKEN = new Unauthorized('Invalid refresh token');
 
@@ -19,7 +20,7 @@ let refreshAccessToken: RefreshAccessToken;
 beforeEach((): void => {
   accountRepository = new AccountRepositoryInMemory();
   tokenIssuer = new TokenIssuerFake();
-  refreshAccessToken = new RefreshAccessToken(new RefreshTokenVerifierFake(), accountRepository, tokenIssuer);
+  refreshAccessToken = new RefreshAccessToken(new RefreshTokenVerifierFake(), accountRepository, tokenIssuer, new TokenRevocationRepositoryInMemory());
 });
 
 describe('RefreshAccessToken', (): void => {

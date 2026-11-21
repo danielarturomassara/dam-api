@@ -1,5 +1,4 @@
 /* eslint-disable perfectionist/sort-modules */
-/* eslint-disable perfectionist/sort-enums */
 
 export enum HTTP_INFORMATIONAL_CODES {
   CONTINUE = 100,
